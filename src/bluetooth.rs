@@ -32,10 +32,15 @@ pub fn spawn_bluetooth_headset_poller(
                     let (headsets, batteries) = collect_pnp_bluetooth_snapshot();
                     cached_batteries = batteries;
                     last_battery_refresh = Instant::now();
-                    headsets
+                    merge_winrt_headsets(headsets, &cached_batteries, &stop)
                 } else {
-                    enumerate_pnp_bluetooth_headphones(&cached_batteries)
+                    let headsets = enumerate_pnp_bluetooth_headphones(&cached_batteries);
+                    merge_winrt_headsets(headsets, &cached_batteries, &stop)
                 };
+
+                if stop.is_stopped() {
+                    break;
+                }
 
                 if matches!(tx.try_send(headsets), Err(TrySendError::Disconnected(_))) {
                     break;
@@ -64,6 +69,30 @@ fn collect_pnp_bluetooth_batteries() -> HashMap<String, u8> {
 #[cfg(not(windows))]
 fn collect_pnp_bluetooth_snapshot() -> (Vec<BluetoothHeadsetSummary>, HashMap<String, u8>) {
     (Vec::new(), HashMap::new())
+}
+
+#[cfg(windows)]
+fn merge_winrt_headsets(
+    mut headsets: Vec<BluetoothHeadsetSummary>,
+    batteries: &HashMap<String, u8>,
+    stop: &StopSignal,
+) -> Vec<BluetoothHeadsetSummary> {
+    let winrt_headsets = crate::bluetooth_winrt::collect_winrt_headset_summaries(stop);
+    for summary in winrt_headsets {
+        merge_headset(&mut headsets, summary);
+    }
+    enrich_batteries_from_windows(&mut headsets, batteries);
+    headsets.sort_by_cached_key(|headset| headset.name.to_ascii_lowercase());
+    headsets
+}
+
+#[cfg(not(windows))]
+fn merge_winrt_headsets(
+    headsets: Vec<BluetoothHeadsetSummary>,
+    _batteries: &HashMap<String, u8>,
+    _stop: &StopSignal,
+) -> Vec<BluetoothHeadsetSummary> {
+    headsets
 }
 
 #[cfg(windows)]
@@ -108,6 +137,7 @@ fn enumerate_pnp_bluetooth_headphones(
 ) -> Vec<BluetoothHeadsetSummary> {
     let mut headsets = Vec::new();
     let mut connected_keys = std::collections::HashSet::new();
+    let mut bt_connected_keys = std::collections::HashSet::new();
 
     collect_connected_media_headphones(&mut headsets);
 
@@ -121,6 +151,7 @@ fn enumerate_pnp_bluetooth_headphones(
                 *class,
                 &mut headsets,
                 &mut connected_keys,
+                &mut bt_connected_keys,
             );
             let _ =
                 windows::Win32::Devices::DeviceAndDriverInstallation::SetupDiDestroyDeviceInfoList(
@@ -129,7 +160,7 @@ fn enumerate_pnp_bluetooth_headphones(
         }
     }
 
-    finalize_headsets(&mut headsets, &connected_keys, pnp_batteries);
+    finalize_headsets(&mut headsets, &connected_keys, &bt_connected_keys, pnp_batteries);
     headsets
 }
 
@@ -137,6 +168,7 @@ fn enumerate_pnp_bluetooth_headphones(
 fn collect_pnp_bluetooth_snapshot() -> (Vec<BluetoothHeadsetSummary>, HashMap<String, u8>) {
     let mut headsets = Vec::new();
     let mut connected_keys = std::collections::HashSet::new();
+    let mut bt_connected_keys = std::collections::HashSet::new();
     let mut batteries = HashMap::new();
 
     for class in SCOPED_DEVICE_CLASSES {
@@ -154,6 +186,7 @@ fn collect_pnp_bluetooth_snapshot() -> (Vec<BluetoothHeadsetSummary>, HashMap<St
                     *class,
                     &mut headsets,
                     &mut connected_keys,
+                    &mut bt_connected_keys,
                 );
             }
 
@@ -164,7 +197,7 @@ fn collect_pnp_bluetooth_snapshot() -> (Vec<BluetoothHeadsetSummary>, HashMap<St
         }
     }
 
-    finalize_headsets(&mut headsets, &connected_keys, &batteries);
+    finalize_headsets(&mut headsets, &connected_keys, &bt_connected_keys, &batteries);
     (headsets, batteries)
 }
 
@@ -172,10 +205,14 @@ fn collect_pnp_bluetooth_snapshot() -> (Vec<BluetoothHeadsetSummary>, HashMap<St
 fn finalize_headsets(
     headsets: &mut Vec<BluetoothHeadsetSummary>,
     connected_keys: &std::collections::HashSet<String>,
+    bt_connected_keys: &std::collections::HashSet<String>,
     batteries: &HashMap<String, u8>,
 ) {
     enrich_batteries_from_windows(headsets, batteries);
-    headsets.retain(|headset| connected_keys.contains(&normalized_device_name(&headset.name)));
+    headsets.retain(|headset| {
+        let key = normalized_device_name(&headset.name);
+        connected_keys.contains(&key) || bt_connected_keys.contains(&key)
+    });
     headsets.sort_by_cached_key(|headset| headset.name.to_ascii_lowercase());
 }
 
@@ -296,7 +333,7 @@ unsafe fn collect_pnp_batteries_from_set(
             continue;
         };
 
-        let key = normalized_device_name(&name);
+        let key = pnp_battery_storage_key(&name);
         if key.is_empty() {
             continue;
         }
@@ -310,6 +347,7 @@ unsafe fn collect_pnp_headphones_from_set(
     device_class: windows::core::GUID,
     headsets: &mut Vec<BluetoothHeadsetSummary>,
     connected_keys: &mut std::collections::HashSet<String>,
+    bt_connected_keys: &mut std::collections::HashSet<String>,
 ) {
     use windows::Win32::Devices::DeviceAndDriverInstallation::{
         SP_DEVINFO_DATA, SetupDiEnumDeviceInfo,
@@ -323,23 +361,40 @@ unsafe fn collect_pnp_headphones_from_set(
 
     while unsafe { SetupDiEnumDeviceInfo(device_info, index, &mut device_data).is_ok() } {
         index += 1;
-        if device_class == BLUETOOTH_DEVICE_CLASS
-            && !unsafe { is_pnp_bluetooth_connected(device_info, &device_data) }
-        {
-            continue;
-        }
-        if !unsafe { is_pnp_headphone_candidate(device_info, &device_data, &device_class) } {
+        let bluetooth_connected = device_class == BLUETOOTH_DEVICE_CLASS
+            && unsafe { is_pnp_bluetooth_connected(device_info, &device_data) };
+
+        if device_class == BLUETOOTH_DEVICE_CLASS && !bluetooth_connected {
             continue;
         }
 
         let Some(name) = (unsafe { read_pnp_device_name(device_info, &device_data) }) else {
             continue;
         };
+
+        if bluetooth_connected && is_transport_endpoint_name(&name) {
+            register_connected_transport_headset(
+                headsets,
+                connected_keys,
+                bt_connected_keys,
+                &name,
+            );
+            continue;
+        }
+
+        if !unsafe { is_pnp_headphone_candidate(device_info, &device_data, &device_class) } {
+            continue;
+        }
+
         if is_excluded_device_name(&name) || is_transport_endpoint_name(&name) {
             continue;
         }
 
-        connected_keys.insert(normalized_device_name(&name));
+        let key = normalized_device_name(&name);
+        connected_keys.insert(key.clone());
+        if device_class == BLUETOOTH_DEVICE_CLASS {
+            bt_connected_keys.insert(key);
+        }
 
         merge_headset(headsets, BluetoothHeadsetSummary { name, battery_percent: None });
     }
@@ -576,7 +631,81 @@ fn pnp_names_relate(left: &str, right: &str) -> bool {
         || (right.len() >= 6 && left.starts_with(right))
 }
 
-fn merge_headset(headsets: &mut Vec<BluetoothHeadsetSummary>, incoming: BluetoothHeadsetSummary) {
+fn pnp_battery_storage_key(name: &str) -> String {
+    let canonical = canonical_bluetooth_audio_display_name(name).unwrap_or_else(|| name.to_string());
+    normalized_device_name(&canonical)
+}
+
+#[cfg(windows)]
+fn register_connected_transport_headset(
+    headsets: &mut Vec<BluetoothHeadsetSummary>,
+    connected_keys: &mut std::collections::HashSet<String>,
+    bt_connected_keys: &mut std::collections::HashSet<String>,
+    transport_name: &str,
+) {
+    let Some(canonical) = canonical_bluetooth_audio_display_name(transport_name) else {
+        return;
+    };
+    if is_excluded_device_name(&canonical) {
+        return;
+    }
+    if !looks_like_bluetooth_headphone_name(&canonical)
+        && !looks_like_bluetooth_headphone_name(transport_name)
+    {
+        return;
+    }
+
+    let key = normalized_device_name(&canonical);
+    if key.is_empty() {
+        return;
+    }
+    connected_keys.insert(key.clone());
+    bt_connected_keys.insert(key);
+    merge_headset(
+        headsets,
+        BluetoothHeadsetSummary { name: canonical, battery_percent: None },
+    );
+}
+
+pub(crate) fn canonical_bluetooth_audio_display_name(name: &str) -> Option<String> {
+    let display = name.trim();
+    if display.is_empty() {
+        return None;
+    }
+
+    let mut owned = display.to_string();
+    const SUFFIXES: &[&str] = &[
+        " Hands-Free AG",
+        " Hands-Free",
+        " Hands Free AG",
+        " Hands Free",
+        " AVRCP",
+    ];
+    for suffix in SUFFIXES {
+        if let Some(stripped) = owned.strip_suffix(suffix) {
+            owned = stripped.trim_end().to_string();
+        }
+    }
+
+    if let Some(open_paren) = owned.rfind('(') {
+        let suffix = owned[open_paren..].to_ascii_lowercase();
+        if suffix.contains("bluetooth")
+            || suffix.contains("stereo")
+            || suffix.contains("hands")
+            || suffix.contains("avrcp")
+        {
+            owned = owned[..open_paren].trim_end().to_string();
+        }
+    }
+
+    if owned.is_empty() || is_transport_endpoint_name(&owned) {
+        return None;
+    }
+
+    Some(owned)
+}
+
+pub(crate) fn merge_headset(headsets: &mut Vec<BluetoothHeadsetSummary>, incoming: BluetoothHeadsetSummary) {
     let incoming_key = normalized_device_name(&incoming.name);
     if let Some(existing) =
         headsets.iter_mut().find(|headset| normalized_device_name(&headset.name) == incoming_key)
@@ -619,7 +748,7 @@ fn display_name_rank(name: &str) -> u32 {
     0
 }
 
-fn looks_like_bluetooth_headphone_name(name: &str) -> bool {
+pub(crate) fn looks_like_bluetooth_headphone_name(name: &str) -> bool {
     const HEADPHONE_TERMS: &[&str] = &[
         "headset",
         "headphone",
@@ -689,7 +818,7 @@ fn looks_like_headphone_name(name: &str) -> bool {
     looks_like_bluetooth_headphone_name(name) || is_media_headphone_endpoint_name(name)
 }
 
-fn is_excluded_device_name(name: &str) -> bool {
+pub(crate) fn is_excluded_device_name(name: &str) -> bool {
     const EXCLUDED_TERMS: &[&str] =
         &["microphone", "mic (", "soundbar", "speaker", "stage", "mouse", "keyboard", "controller"];
 
@@ -847,10 +976,39 @@ mod tests {
         let connected_keys =
             std::collections::HashSet::from([normalized_device_name("Connected Buds")]);
 
-        finalize_headsets(&mut headsets, &connected_keys, &HashMap::new());
+        let bt_connected_keys = std::collections::HashSet::new();
+        finalize_headsets(&mut headsets, &connected_keys, &bt_connected_keys, &HashMap::new());
 
         assert_eq!(headsets.len(), 1);
         assert_eq!(headsets[0].name, "Connected Buds");
+    }
+
+    #[test]
+    fn transport_connected_node_survives_finalize() {
+        let mut headsets = vec![summary("BlackShark V3 BT", None)];
+        let connected_keys =
+            std::collections::HashSet::from([normalized_device_name("BlackShark V3 BT")]);
+        let bt_connected_keys = connected_keys.clone();
+        let mut batteries = HashMap::new();
+        batteries.insert(normalized_device_name("BlackShark V3 BT Hands-Free AG"), 88);
+
+        finalize_headsets(&mut headsets, &connected_keys, &bt_connected_keys, &batteries);
+
+        assert_eq!(headsets.len(), 1);
+        assert_eq!(headsets[0].name, "BlackShark V3 BT");
+        assert_eq!(headsets[0].battery_percent, Some(88));
+    }
+
+    #[test]
+    fn canonicalizes_transport_suffixes() {
+        assert_eq!(
+            canonical_bluetooth_audio_display_name("BlackShark V3 BT Hands-Free AG"),
+            Some("BlackShark V3 BT".to_string())
+        );
+        assert_eq!(
+            canonical_bluetooth_audio_display_name("Razer Barracuda X (Bluetooth Stereo)"),
+            Some("Razer Barracuda X".to_string())
+        );
     }
 
     #[test]

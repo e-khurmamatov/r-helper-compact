@@ -1,6 +1,6 @@
 [package]
 name = "r-helper"
-version = "0.8.6"
+version = "0.8.7"
 edition = "2024"
 description = "R-Helper - Razer Blade control interface"
 authors = ["Fatalution"]
@@ -25,7 +25,12 @@ app-single-instance = "0.1"
 winreg = "0.56"
 wmi = "0.18.4"
 nvml-wrapper = "0.12.1"
+windows-future = { version = "0.3.2", features = ["std"] }
 windows = { version = "0.62.0", features = [
+    "Devices_Bluetooth",
+    "Devices_Enumeration",
+    "Foundation",
+    "Foundation_Collections",
     "Win32_Devices_DeviceAndDriverInstallation",
     "Win32_Devices_Properties",
     "Win32_Foundation",

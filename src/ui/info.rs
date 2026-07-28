@@ -237,7 +237,7 @@ fn bluetooth_status(headset: &BluetoothHeadsetSummary) -> &'static str {
     match headset.battery_percent {
         Some(pct) if pct <= 20 => "Bluetooth · Low",
         Some(_) => "Bluetooth · OK",
-        None => "Bluetooth · Connected",
+        None => "Bluetooth · Connected (battery unavailable)",
     }
 }
 

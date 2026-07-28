@@ -12,6 +12,7 @@ pub struct TraySharedState {
     hwnd: Mutex<Option<isize>>,
     visible: AtomicBool,
     quit_requested: AtomicBool,
+    show_requested: AtomicBool,
     ctx: eframe::egui::Context,
 }
 
@@ -21,6 +22,7 @@ impl TraySharedState {
             hwnd: Mutex::new(None),
             visible: AtomicBool::new(true),
             quit_requested: AtomicBool::new(false),
+            show_requested: AtomicBool::new(false),
             ctx,
         })
     }
@@ -38,8 +40,20 @@ impl TraySharedState {
         if let Some(hwnd) = hwnd {
             show_window(hwnd);
             self.visible.store(true, Ordering::Relaxed);
+            self.quit_requested.store(false, Ordering::Release);
+            self.show_requested.store(true, Ordering::Release);
             self.ctx.request_repaint();
         }
+    }
+
+    pub fn clear_quit_requested(&self) {
+        self.quit_requested.store(false, Ordering::Release);
+    }
+
+    pub fn take_show_requested(&self) -> bool {
+        self.show_requested
+            .compare_exchange(true, false, Ordering::AcqRel, Ordering::Relaxed)
+            .is_ok()
     }
 
     pub fn hide(self: &Arc<Self>) {
@@ -128,10 +142,13 @@ pub fn hide_window(hwnd: isize) {
 #[cfg(windows)]
 pub fn show_window(hwnd: isize) {
     use windows::Win32::Foundation::HWND;
-    use windows::Win32::UI::WindowsAndMessaging::{SW_SHOW, SetForegroundWindow, ShowWindow};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        SW_RESTORE, SW_SHOW, SetForegroundWindow, ShowWindow,
+    };
 
     unsafe {
         let hwnd = HWND(hwnd as *mut _);
+        let _ = ShowWindow(hwnd, SW_RESTORE);
         let _ = ShowWindow(hwnd, SW_SHOW);
         let _ = SetForegroundWindow(hwnd);
     }

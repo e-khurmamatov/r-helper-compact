@@ -2,6 +2,8 @@
 
 mod app;
 mod bluetooth;
+#[cfg(windows)]
+mod bluetooth_winrt;
 mod config;
 mod cooling_pad_apply;
 mod cooling_pad_auto;
@@ -2492,8 +2494,14 @@ impl RazerGuiApp {
 
 impl eframe::App for RazerGuiApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if self.tray_state.as_ref().is_some_and(|state| state.quit_requested()) {
-            self.should_quit = true;
+        if let Some(state) = self.tray_state.as_ref() {
+            if state.quit_requested() {
+                self.should_quit = true;
+                state.clear_quit_requested();
+            }
+            if state.take_show_requested() {
+                self.should_quit = false;
+            }
         }
 
         #[cfg(windows)]
@@ -2555,7 +2563,7 @@ impl eframe::App for RazerGuiApp {
         self.message_manager.update();
 
         if ctx.input(|i| i.viewport().close_requested()) {
-            if self.minimize_to_tray {
+            if self.minimize_to_tray && !self.should_quit {
                 ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
                 self.hide_to_tray();
             } else {
