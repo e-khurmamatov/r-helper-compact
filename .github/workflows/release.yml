@@ -1,0 +1,111 @@
+name: Build and publish Windows release
+
+on:
+  push:
+    tags: ['v[0-9]*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Build version (for example 0.9.0). Manual runs only build artifacts.'
+        required: true
+        default: '0.9.0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.401
+      - name: Validate version
+        id: version
+        shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.Substring(1) } else { $env:INPUT_VERSION }
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw 'Unsupported release version' }
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - name: Install pinned Rust toolchain
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.98.1 --profile minimal --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup override set 1.98.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Test and build project sources
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./scripts/Build.ps1 -OutputDirectory dist/app -Version $env:RELEASE_VERSION
+          ./scripts/Test-Updates.ps1 -AppDirectory dist/app
+      - name: Build validated MSI and portable archive
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./scripts/Build-Installer.ps1 -Version $env:RELEASE_VERSION -DownloadTools
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            dist/releases/*.msi
+            dist/releases/*-portable.zip
+            dist/releases/SHA256SUMS.txt
+          if-no-files-found: error
+      - name: Upload validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-logs
+          path: |
+            work/logs/build.log
+            work/logs/installer-build.log
+            work/logs/updates-*.txt
+          if-no-files-found: ignore
+
+  publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-release
+          path: release-assets
+      - name: Publish installer and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          prerelease=()
+          if [[ "$RELEASE_VERSION" == *-* ]]; then prerelease=(--prerelease); fi
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo 'Release already exists; refusing to replace published binaries.' >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" release-assets/*.msi release-assets/*-portable.zip release-assets/SHA256SUMS.txt \
+            --verify-tag --title "R-Helper Compact $RELEASE_VERSION" --generate-notes "${prerelease[@]}"

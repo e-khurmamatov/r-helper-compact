@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title desc">
+  <title id="title">R-Helper Compact</title>
+  <desc id="desc">Two Speed: a geometric R formed by two offset strokes with parallel diagonal legs.</desc>
+  <g fill="#57F000">
+    <path d="M48 40H196Q204 40 210 48L234 80Q246 96 234 112L224 126Q220 132 210 132H182L240 216H184L102 97H180Q190 97 190 87Q190 82 186 77H74Z"/>
+    <path d="M16 97H68L150 216H98Z"/>
+  </g>
+</svg>

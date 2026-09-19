@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="R-Helper Compact" Language="1033"
+           Version="$(var.NumericVersion)" Manufacturer="R-Helper Compact"
+           UpgradeCode="C253AC71-2DEE-449E-BF85-6783B5C4D74F">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine"
+             InstallPrivileges="elevated" Platform="x64" Description="R-Helper Compact $(var.ReleaseVersion)" />
+    <MajorUpgrade DowngradeErrorMessage="A newer R-Helper Compact is already installed."
+                  Schedule="afterInstallInitialize" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="medium" />
+    <Condition Message="R-Helper Compact requires 64-bit Windows.">Installed OR VersionNT64</Condition>
+    <Property Id="ARPPRODUCTICON" Value="CompactIcon.exe" />
+    <Property Id="MSIRESTARTMANAGERCONTROL" Value="DisableShutdown" />
+    <Icon Id="CompactIcon.exe" SourceFile="$(var.AppDir)\rhelper-compact.exe" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <UIRef Id="WixUI_InstallDir" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="R-Helper Compact">
+          <Component Id="Application" Guid="8E3D560D-C35A-4F3E-BF05-205E551D46D3" Win64="yes">
+            <File Id="CompactExe" Source="$(var.AppDir)\rhelper-compact.exe" KeyPath="yes">
+              <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="R-Helper Compact"
+                        Advertise="yes" WorkingDirectory="INSTALLFOLDER" Icon="CompactIcon.exe" />
+            </File>
+          </Component>
+          <Component Id="Notices" Guid="147387F9-B643-45C9-962E-488127C62E41" Win64="yes">
+            <File Id="License" Source="$(var.AppDir)\LICENSE" KeyPath="yes" />
+            <File Id="CompactNotices" Source="$(var.AppDir)\THIRD_PARTY_NOTICES.md" />
+            <File Id="Readme" Source="$(var.AppDir)\README.md" />
+          </Component>
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder" />
+      <Directory Id="System64Folder" />
+    </Directory>
+    <Feature Id="MainFeature" Title="R-Helper Compact" Level="1" Absent="disallow">
+      <ComponentGroupRef Id="RuntimeFiles" />
+      <ComponentRef Id="Application" />
+      <ComponentRef Id="Notices" />
+    </Feature>
+    <!-- Remove only Compact's current-user Run value. Never touch R-Helper's
+         value, the shared Run key, or user settings. Upgrades preserve startup. -->
+    <CustomAction Id="RemoveCurrentUserStartup" Directory="System64Folder"
+      ExeCommand="&quot;[System64Folder]reg.exe&quot; delete &quot;HKCU\Software\Microsoft\Windows\CurrentVersion\Run&quot; /v &quot;R-Helper Compact&quot; /f"
+      Execute="deferred" Impersonate="yes" Return="ignore" />
+    <InstallExecuteSequence>
+      <Custom Action="RemoveCurrentUserStartup" Before="RemoveFiles">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+    </InstallExecuteSequence>
+  </Product>
+</Wix>

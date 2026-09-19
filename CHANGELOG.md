@@ -1,53 +1,15 @@
+# Changelog
 
-# Razer Laptop Cooling Pad (v0.5.1)
-## Features
+## 0.9.0 (unreleased)
 
-- **Cooling pad fan** — On/Off toggle and manual RPM slider (500–3200, 50 RPM steps) via direct HID control.
-- **Cooling pad lighting** — Underglow Off / Static / Breathing with brightness steps (Chroma extended matrix).
-- **Hot-plug detection** — Pad sections appear when USB `1532:0F43` is connected; fan turns off on app exit.
-- **Info tab** — Cooling pad status card when connected.
+First independent R-Helper Compact release, forked from R-Helper 0.8.5.
 
-## Notes
+- Native WinUI 3 tray panel with reorderable sections and English/Russian localization.
+- Laptop performance, fan, charging and lighting controls, plus Cooling Pad support.
+- Compiled laptop registry with unsupported-device protection and support requests.
+- Two-minute CPU/GPU temperature charts and adaptive polling.
+- AC/battery profiles and optional external keyboard lighting ownership.
+- GitHub update checks, verified downloads, MSI installation and portable packages.
+- Self-contained source workspace; unused peripheral battery and headset code removed.
 
-- Do not run alongside Razer Synapse unless the pad is in Manual mode in Synapse.
-- Displayed pad RPM is commanded speed, not a measured value.
-
-# CPU/GPU average temperatures (v0.5.0)
-## Features
-
-- **CPU/GPU average temps** — Shown in the Info tab laptop card and bottom-right of Fan Control.
-- **Thermal polling** — Background thread reads LibreHardwareMonitor WMI when available, with NVIDIA NVML and ACPI fallbacks.
-
-# Startup & Control tab performance (v0.4.9)
-## Fixes
-
-- **Auto fan cap** fixed restoring state from **Saved Settings** 
-
-
-# Startup & Control tab performance (v0.4.8)
-## Features
-
-- **Faster startup** — Device presence is checked lightly in the background; full HID connect and state load happen once on the UI thread.
-- **Loading state** — Control panel shows a spinner until init finishes instead of rendering all sections with “Reading…” placeholders.
-- **Background device poller** — Fan RPM, brightness, AC power, and battery care sync on a background thread; UI applies snapshots without blocking.
-- **Single specs query** — CPU, GPU, and RAM are read in one PowerShell call instead of three separate processes.
-- **Smarter repaints** — 100 ms while initializing or dragging sliders; 250 ms when idle. Init status text no longer repaints every frame.
-
-# Info tab & live device status (v0.4.7)
-## Features
-
-- **Control | Info tabs** — Switch between device controls and a read-only status view.
-- **Laptop info card** — Shows model (with year), CPU, RAM, GPU, SKU, and USB PID.
-- **Battery card** — Windows charge level, charging state, time remaining, and charge limit.
-- **Connected peripherals** — Lists Razer mice/keyboards with battery % and status (laptop excluded).
-
-
-# Saved settings & config persistence (v0.4.6)
-## Features
-
-- **Saved Settings** — Save full device state (performance, fan, lighting, battery) separately for AC and battery power.
-- **Auto-switch** — Apply the matching saved profile when AC is plugged or unplugged.
-- **Config file** — Settings stored in `%APPDATA%/r-helper/config.json` and restored on launch.
-- **Auto fan cap** — Max RPM limit in auto fan mode persists across restarts.
-- **Footer preferences** — Debug, minimize-to-tray, and run-at-startup checkboxes are remembered.
-
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the fork point and author credits.

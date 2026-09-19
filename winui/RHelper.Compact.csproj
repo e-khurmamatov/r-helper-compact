@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <UseWinUI>true</UseWinUI>
+
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>rhelper-compact</AssemblyName>
+    <Version>0.9.0</Version>
+    <RepositoryUrl>https://github.com/e-khurmamatov/r-helper-compact</RepositoryUrl>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="RepositoryUrl" Value="$(RepositoryUrl)" />
+    <EmbeddedResource Include="Locales/*.json" LogicalName="RHelper.Locales.%(Filename)%(Extension)" />
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260804001" />
+  </ItemGroup>
+  <Target Name="PublishWinUIResources" AfterTargets="Publish">
+    <ItemGroup>
+      <WinUIResource Include="$(TargetDir)$(AssemblyName).pri" />
+      <WinUIResource Include="$(TargetDir)**/*.xbf" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WinUIResource)" DestinationFiles="@(WinUIResource->'$(PublishDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+</Project>

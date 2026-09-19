@@ -1,9 +1,9 @@
 use crate::capabilities::{probe_features, resolve_descriptor, run_init_cmds};
 use crate::descriptor::Descriptor;
 use crate::packet::Packet;
-use crate::profile::{lookup_profile, resolve_generation};
+use crate::device_registry::{self, SupportReport};
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use std::{thread, time::Duration};
 
 pub struct Device {
@@ -28,10 +28,6 @@ fn read_bios_value(name: &str) -> Result<String> {
 // Read the model id and clip to conform with https://mysupport.razer.com/app/answers/detail/a_id/5481
 fn read_device_model() -> Result<String> {
     Ok(read_bios_value("SystemSKU")?.chars().take(10).collect())
-}
-
-fn read_device_display_name() -> Result<String> {
-    read_bios_value("SystemProductName")
 }
 
 impl Device {
@@ -73,21 +69,8 @@ impl Device {
         })
     }
 
-    fn pick_target_pid(pid_list: &[u16]) -> u16 {
-        pid_list
-            .iter()
-            .copied()
-            .find(|pid| lookup_profile(*pid).is_some())
-            .or_else(|| pid_list.first().copied())
-            .expect("pid_list is non-empty")
-    }
-
     pub fn send(&self, report: Packet) -> Result<Packet> {
         let mut response_buf: Vec<u8> = vec![0x00; 1 + std::mem::size_of::<Packet>()];
-        let report_bytes: Vec<u8> = (&report).into();
-        let mut request_buf = Vec::with_capacity(1 + report_bytes.len());
-        request_buf.push(0);
-        request_buf.extend_from_slice(&report_bytes);
 
         const MAX_RETRIES: usize = 5;
 
@@ -95,7 +78,14 @@ impl Device {
             thread::sleep(Duration::from_micros(1000));
 
             self.device
-                .send_feature_report(&request_buf)
+                .send_feature_report(
+                    [0_u8; 1]
+                        .iter()
+                        .copied()
+                        .chain(Into::<Vec<u8>>::into(&report).into_iter())
+                        .collect::<Vec<_>>()
+                        .as_slice(),
+                )
                 .context("Failed to send feature report")?;
 
             thread::sleep(Duration::from_micros(2000));
@@ -139,25 +129,34 @@ impl Device {
         }
     }
 
+    /// Enumerates identifiers and reads BIOS SKU only. Never opens HID or probes firmware.
+    pub fn support_report() -> SupportReport {
+        let sku=read_device_model().unwrap_or_default();
+        let api=hidapi::HidApi::new();
+        let (pids,hid): (Vec<u16>,Vec<String>)=match api.as_ref() {
+            Ok(api)=>api.device_list().filter(|i|i.vendor_id()==Self::RAZER_VID)
+                .map(|i|(i.product_id(),format!("1532:{:04X} interface={} usage={:04X}:{:04X}",i.product_id(),i.interface_number(),i.usage_page(),i.usage()))).unzip(),
+            Err(_)=>(Vec::new(),Vec::new()),
+        };
+        let selection=device_registry::records().and_then(|r|device_registry::select(r,&pids,&sku));
+        let (supported,reason)=match selection {
+            Ok(model)=>(true,format!("{}: model is registered",model.name)),
+            Err(error)=>(false,format!("{error}")),
+        };
+        let reason=if api.is_err() { "Could not enumerate HID devices. Controls are disabled.".into() } else { reason };
+        SupportReport { supported,sku,hid,reason }
+    }
     pub fn detect() -> Result<Device> {
         let (pid_list, model_sku) = Device::enumerate()?;
-        let display_name = read_device_display_name().unwrap_or_else(|_| model_sku.clone());
-
-        let target_pid = Self::pick_target_pid(&pid_list);
-        let mut device = Self::open_by_pid(target_pid)?;
-
-        let generation = resolve_generation(target_pid, &model_sku);
-
-        let probed = probe_features(&device);
-        let descriptor =
-            resolve_descriptor(model_sku, display_name, target_pid, generation, probed);
-        device.info = descriptor;
-
-        let init_cmds = generation.default_init_cmds();
-        if !init_cmds.is_empty() {
-            run_init_cmds(&device, init_cmds)?;
-        }
-
-        Ok(device)
+        device_registry::open_registered(&pid_list,&model_sku,|model| {
+            // No HID handle, probe or init command exists before authorization above.
+            let mut device = Self::open_by_pid(model.product_id())?;
+            let generation=model.generation();
+            let probed = probe_features(&device);
+            device.info = resolve_descriptor(model_sku.clone(),model.name.clone(),model.product_id(),generation,probed);
+            let init_cmds = generation.default_init_cmds();
+            if !init_cmds.is_empty() { run_init_cmds(&device, init_cmds)?; }
+            Ok(device)
+        })
     }
 }
