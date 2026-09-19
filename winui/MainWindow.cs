@@ -206,7 +206,16 @@ internal sealed class MainWindow : Window
             }
         });
         startup.IsEnabled=false;
-        applicationHost.Content=Card(L.T("Application"),updates,Fold(L.T("Preferences"),startup,theme));organizer.Add("app",L.T("Application"),applicationHost);
+        var languageCodes=new[]{""}.Concat(LanguagePreference.Available).ToArray();
+        var language=new ComboBox { Header=L.T("Language"),ItemsSource=languageCodes.Select(code=>code==""?L.T("System"):System.Globalization.CultureInfo.GetCultureInfo(code).NativeName).ToArray(),SelectedIndex=Array.IndexOf(languageCodes,smoke?"":LanguagePreference.Read(LanguagePreference.SettingsPath)) };
+        var languageHint=new TextBlock { Text=L.T("Language changes take effect after restarting the application."),TextWrapping=TextWrapping.Wrap,Opacity=.7 };
+        int savedLanguage=language.SelectedIndex;
+        language.SelectionChanged+=(_,_)=> {
+            if(language.SelectedIndex<0||language.SelectedIndex==savedLanguage)return;
+            try { if(!smoke)LanguagePreference.Save(LanguagePreference.SettingsPath,languageCodes[language.SelectedIndex]);savedLanguage=language.SelectedIndex; }
+            catch(Exception e) when(e is IOException or UnauthorizedAccessException) { language.SelectedIndex=savedLanguage;ShowError(e.Message); }
+        };
+        applicationHost.Content=Card(L.T("Application"),updates,Fold(L.T("Preferences"),startup,theme,language,languageHint));organizer.Add("app",L.T("Application"),applicationHost);
         organizer.Add("about",L.T("About device"),new Expander { Header=L.T("About device"),Content=info,HorizontalAlignment=HorizontalAlignment.Stretch });
         organizer.Initialize(new[]{"performance","cooling","battery","profiles","lighting","pad","app","about"});
         content.Children.Add(status);

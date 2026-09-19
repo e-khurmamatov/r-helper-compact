@@ -172,5 +172,7 @@
   "Update installed. Windows needs a restart to finish applying it.": "Update installed. Windows needs a restart to finish applying it.",
   "Update cancelled. The previous version will reopen.": "Update cancelled. The previous version will reopen.",
   "Update could not be completed: ": "Update could not be completed: ",
-  "Could not reopen the application: ": "Could not reopen the application: "
+  "Could not reopen the application: ": "Could not reopen the application: ",
+  "Language": "Language",
+  "Language changes take effect after restarting the application.": "Language changes take effect after restarting the application."
 }
