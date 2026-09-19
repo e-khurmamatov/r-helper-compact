@@ -16,11 +16,21 @@ Control performance modes, fan speeds, keyboard lighting and battery charge limi
 
 Support varies by model and firmware. Unknown laptops are blocked from hardware control. See [the device registry](devices/README.md) to request or contribute support.
 
+## Screenshots
+
+<p>
+  <img src="assets/screenshots/overview.png" alt="Temperature charts and fan controls" width="360">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="assets/screenshots/lighting.png" alt="Keyboard lighting settings" width="360">
+</p>
+
+Razer Blade 14 (2022). Available controls depend on the laptop model.
+
 ## Install
 
 Download the x64 MSI or portable ZIP from Releases. The MSI installs to Program Files; extract the entire portable ZIP before running `rhelper-compact.exe`. Left-click the tray icon to open settings; right-click for quick controls and Quit. Close the app before upgrading.
 
-Settings are stored in `%APPDATA%/r-helper-compact/`. English and Russian are included; the app follows the Windows display language and falls back to English. Builds are currently unsigned.
+Settings are stored in `%APPDATA%/r-helper-compact/`. English and Russian are included; the app follows the Windows display language and falls back to English. Override it under **Application → Preferences → Language**, then quit from the tray menu and reopen the app. Builds are currently unsigned.
 
 Open **Application → Check for updates** to check GitHub Releases. Installed copies can download a verified MSI and restart after updating; Windows may request administrator permission. Portable copies download a ZIP to extract manually. Checks are manual; preview builds also receive prereleases. Update downloads and installer logs are stored in `%LOCALAPPDATA%/r-helper-compact/updates/`.
 
