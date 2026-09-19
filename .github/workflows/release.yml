@@ -74,7 +74,7 @@ jobs:
             dist/releases/SHA256SUMS.txt
           create-storage-record: false
       - name: Upload release assets
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-release
           path: |
@@ -84,7 +84,7 @@ jobs:
           if-no-files-found: error
       - name: Upload validation logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-release-logs
           path: |
