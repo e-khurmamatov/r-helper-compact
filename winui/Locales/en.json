@@ -1,4 +1,10 @@
 {
+  "Reactive": "Reactive",
+  "Starlight": "Starlight",
+  "Two-color breathing": "Two-color breathing",
+  "Second color": "Second color",
+  "Fade duration": "Fade duration",
+  "Starlight uses a fixed green effect on this model.": "Starlight uses a fixed green effect on this model.",
   "Laptop model": "Laptop model",
   "BIOS / EC (if known)": "BIOS / EC (if known)",
   "Optional": "Optional",
