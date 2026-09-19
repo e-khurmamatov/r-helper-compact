@@ -2,7 +2,7 @@
 
 `en.json` contains the English source strings. Copy it to a Windows culture name such as `de.json`, `fr.json` or `pt-BR.json`, then translate the values only. Keep keys and format placeholders (`{0}`, `{1:0}`, `{0:X2}`) unchanged.
 
-Files are embedded automatically. The app tries the Windows display culture, then its parent language, then English. Missing or empty translations fall back to English. No hardware changes or language registration code are needed.
+Files are embedded automatically and appear in the application language selector under Preferences. A saved selection takes effect on the next launch; System follows Windows. The app tries the Windows display culture, then its parent language, then English. Missing or empty translations fall back to English. No hardware changes or language registration code are needed.
 
 Run `python -m unittest discover -s tests -v`. After building, preview without a controller:
 

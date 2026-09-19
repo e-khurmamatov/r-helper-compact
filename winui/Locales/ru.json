@@ -172,5 +172,7 @@
   "Update installed. Windows needs a restart to finish applying it.": "Обновление установлено. Для завершения требуется перезагрузка Windows.",
   "Update cancelled. The previous version will reopen.": "Обновление отменено. Предыдущая версия откроется снова.",
   "Update could not be completed: ": "Не удалось завершить обновление: ",
-  "Could not reopen the application: ": "Не удалось открыть приложение: "
+  "Could not reopen the application: ": "Не удалось открыть приложение: ",
+  "Language": "Язык",
+  "Language changes take effect after restarting the application.": "Изменение языка вступит в силу после перезапуска приложения."
 }

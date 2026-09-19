@@ -15,6 +15,7 @@ internal static class Program
         }
         if(args.Length==2&&args[0]=="--apply-update") {Environment.ExitCode=UpdateInstaller.Run(args[1]);return;}
         bool smoke=Array.IndexOf(args,"--ui-smoke-test")>=0;
+        if(!smoke)LanguagePreference.Apply();
         // Culture override is restricted to the controller-free UI test.
         if(smoke)foreach(var arg in args)if(arg.StartsWith("--ui-culture=",StringComparison.Ordinal)) {
             var culture=System.Globalization.CultureInfo.GetCultureInfo(arg[13..]);
