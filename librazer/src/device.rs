@@ -1,6 +1,6 @@
 use crate::capabilities::{probe_features, resolve_descriptor, run_init_cmds};
 use crate::descriptor::Descriptor;
-use crate::packet::Packet;
+use crate::packet::{Packet, PACKET_SIZE};
 use crate::device_registry::{self, SupportReport};
 
 use anyhow::{anyhow, Context, Result};
@@ -70,7 +70,7 @@ impl Device {
     }
 
     pub fn send(&self, report: Packet) -> Result<Packet> {
-        let mut response_buf: Vec<u8> = vec![0x00; 1 + std::mem::size_of::<Packet>()];
+        let mut response_buf: Vec<u8> = vec![0x00; 1 + PACKET_SIZE];
 
         const MAX_RETRIES: usize = 5;
 

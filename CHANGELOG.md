@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.10.0 (unreleased)
+## 0.10.1 (unreleased)
+
+- Replace the unmaintained bincode dependency with explicit encoding of the existing 90-byte HID packet format.
+- Update Windows App SDK and runtime notices, Rust dependencies and GitHub Actions.
+- Preserve hardware command bytes and settings compatibility.
+
+## 0.10.0
 
 - Add a saved application language preference with system, English and Russian options; changes apply after restart.
 - Add real English and Russian screenshots to the README.
