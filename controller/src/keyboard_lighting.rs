@@ -1,4 +1,4 @@
-//! Independently encoded Blade 14 (2022) matrix reports; see devices/KEYBOARD_PROTOCOL.md.
+//! Independently encoded Blade 14 (2022) matrix reports.
 use anyhow::{Result, bail};
 use librazer::device::Device;
 use serde::Deserialize;
