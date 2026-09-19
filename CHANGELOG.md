@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0 (unreleased)
+
+- Add Reactive keyboard lighting with a selectable color and four fade durations.
+- Add fixed green Starlight and two-color Breathing for the existing Blade 14 (2022) lighting adapter.
+- Keep the second-color label compact and muted beside its color preview.
+- Preserve OpenRGB ownership, explicit effect application and existing device support gates.
+- Independently encode the additional effects using documented protocol facts; no third-party source code is incorporated.
+
 ## 0.10.1 (unreleased)
 
 - Replace the unmaintained bincode dependency with explicit encoding of the existing 90-byte HID packet format.

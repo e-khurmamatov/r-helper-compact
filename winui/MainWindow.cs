@@ -56,10 +56,14 @@ internal sealed class MainWindow : Window
     readonly LatestSliderCommand rpmCommand,brightnessCommand;
     readonly Button reconnect;
     readonly ComboBox lightingOwner=new() { Header=L.T("Lighting control"),ItemsSource=new[]{"R-Helper Compact","OpenRGB"},SelectedIndex=0,IsEnabled=false };
-    readonly ComboBox keyboardEffect=new() { Header=L.T("Standard effect"),ItemsSource=new[]{L.T("Off"),L.T("Solid color"),L.T("Wave"),L.T("Breathing"),L.T("Spectrum")},SelectedIndex=1 };
+    readonly ComboBox keyboardEffect=new() { Header=L.T("Standard effect"),ItemsSource=new[]{L.T("Off"),L.T("Solid color"),L.T("Wave"),L.T("Breathing"),L.T("Spectrum"),L.T("Reactive"),L.T("Starlight"),L.T("Two-color breathing")},SelectedIndex=1 };
     readonly ComboBox waveDirection=new() { Header=L.T("Wave direction"),ItemsSource=new[]{L.T("Left"),L.T("Right")},SelectedIndex=1 };
     readonly ColorPicker keyboardColor=new() { IsAlphaEnabled=false,IsMoreButtonVisible=false,Color=Windows.UI.Color.FromArgb(255,0,255,0) };
     readonly Expander keyboardColorSection=new() { Header=L.T("Color"),HorizontalAlignment=HorizontalAlignment.Stretch };
+    readonly ColorPicker keyboardColor2=new() { IsAlphaEnabled=false,IsMoreButtonVisible=false,Color=Windows.UI.Color.FromArgb(255,0,128,255) };
+    readonly Expander keyboardColor2Section=new() { HorizontalAlignment=HorizontalAlignment.Stretch };
+    readonly ComboBox reactiveDuration=new() { Header=L.T("Fade duration"),ItemsSource=new[]{"1","2","3","4"},SelectedIndex=1 };
+    readonly TextBlock starlightHint=new() { Text=L.T("Starlight uses a fixed green effect on this model."),TextWrapping=TextWrapping.Wrap,Opacity=.7 };
     readonly ContentControl lightingHost=new() { IsEnabled=false,HorizontalContentAlignment=HorizontalAlignment.Stretch };
     readonly TextBlock lightingHint=new() { TextWrapping=TextWrapping.Wrap,Opacity=.7 };
     readonly Button applyEffect;
@@ -132,22 +136,24 @@ internal sealed class MainWindow : Window
         lights.Header=L.T("Keep backlight on while idle");lights.Toggled+=async(_,_)=>await Changed("lights",lights.IsOn);
         lightingOwner.SelectionChanged+=async(_,_)=> { if(!syncing) { brightnessCommand.Cancel();dirtySliders.Remove(brightness);await Send("lighting_external",lightingOwner.SelectedIndex==1); } };
         applyEffect=ActionButton(L.T("Apply effect"),async()=> {
-            var color=new int[]{keyboardColor.Color.R,keyboardColor.Color.G,keyboardColor.Color.B};
-            object command=keyboardEffect.SelectedIndex switch {
-                0=>new {effect="off"},1=>new {effect="static",color},
-                2=>new {effect="wave",direction=waveDirection.SelectedIndex==0?"left":"right"},
-                3=>new {effect="breathing",color},_=>new {effect="spectrum"}
-            };
+            object command=KeyboardEffectCommand();
             await Send("keyboard_effect",command);
         });
         keyboardColorSection.Content=keyboardColor;keyboardColorSection.Header=ColorPreview(keyboardColor);
+        keyboardColor2Section.Content=keyboardColor2;
+        var secondColorHeader=ColorPreview(keyboardColor2);
+        secondColorHeader.Children.Add(new TextBlock { Text=L.T("Second color"),FontSize=12,Opacity=.65,VerticalAlignment=VerticalAlignment.Center });
+        keyboardColor2Section.Header=secondColorHeader;
         void EffectOptions() {
-            keyboardColorSection.Visibility=keyboardEffect.SelectedIndex is 1 or 3?Visibility.Visible:Visibility.Collapsed;
+            keyboardColorSection.Visibility=keyboardEffect.SelectedIndex is 1 or 3 or 5 or 7?Visibility.Visible:Visibility.Collapsed;
+            keyboardColor2Section.Visibility=keyboardEffect.SelectedIndex==7?Visibility.Visible:Visibility.Collapsed;
+            reactiveDuration.Visibility=keyboardEffect.SelectedIndex==5?Visibility.Visible:Visibility.Collapsed;
+            starlightHint.Visibility=keyboardEffect.SelectedIndex==6?Visibility.Visible:Visibility.Collapsed;
             waveDirection.Visibility=keyboardEffect.SelectedIndex==2?Visibility.Visible:Visibility.Collapsed;
         }
         keyboardEffect.SelectionChanged+=(_,_)=>EffectOptions();EffectOptions();
         lightingHost.Content=Stack(brightness,Pair(keyboardEffect,logo),
-            keyboardColorSection,waveDirection,applyEffect,
+            keyboardColorSection,keyboardColor2Section,waveDirection,reactiveDuration,starlightHint,applyEffect,
             Fold(L.T("Lighting behavior"),lights,new TextBlock { Text=L.T("Enables keyboard driver mode for persistent lighting. It may affect Fn keys depending on firmware. Brightness is unchanged. Disable this if Fn keys stop working."),TextWrapping=TextWrapping.Wrap,Opacity=.7 }));
         organizer.Add("lighting",L.T("Lighting"),Card(L.T("Lighting"),lightingOwner,lightingHint,lightingHost));
         battery.Header=L.T("Charge limit");foreach(var value in new[]{"Disable","Percent50","Percent55","Percent60","Percent65","Percent70","Percent75","Percent80"}) AddChoice(battery,value);
@@ -301,6 +307,24 @@ internal sealed class MainWindow : Window
             state=internalLighting.RootElement.Clone();Apply();
             if(!lightingHost.IsEnabled || !applyEffect.IsEnabled)throw new InvalidOperationException("Internal lighting controls failed");
         }
+        keyboardColor.Color=Windows.UI.Color.FromArgb(255,18,52,86);
+        keyboardColor2.Color=Windows.UI.Color.FromArgb(255,171,205,239);
+        foreach(var (index,effect) in new[]{(5,"reactive"),(6,"starlight"),(7,"breathing_dual")}) {
+            keyboardEffect.SelectedIndex=index;
+            reactiveDuration.SelectedIndex=3;
+            using var command=JsonDocument.Parse(JsonSerializer.Serialize(KeyboardEffectCommand()));
+            var value=command.RootElement;
+            if(value.GetProperty("effect").GetString()!=effect)throw new InvalidOperationException("Effect selection failed");
+            if((keyboardColor2Section.Visibility==Visibility.Visible)!=(index==7) ||
+               (reactiveDuration.Visibility==Visibility.Visible)!=(index==5) ||
+               (starlightHint.Visibility==Visibility.Visible)!=(index==6) ||
+               (keyboardColorSection.Visibility==Visibility.Visible)!=(index!=6))throw new InvalidOperationException("Effect options failed");
+            if(index==5 && value.GetProperty("speed").GetInt32()!=4)throw new InvalidOperationException("Reactive duration failed");
+            if(index==7 && value.GetProperty("color2")[2].GetInt32()!=239)throw new InvalidOperationException("Second color failed");
+            Apply();
+            if(keyboardEffect.SelectedIndex!=index || keyboardColor2.Color.B!=239)throw new InvalidOperationException("Polling overwrote effect edit");
+        }
+        keyboardEffect.SelectedIndex=1;
         using(var unknown=JsonDocument.Parse("""{"support_status":"unsupported","ready":true,"pad_connected":true,"support_report":{"sku":"RZ09-9999","hid":["1532:FFFF"],"reason":"Synthetic unsupported model"}}""")) {
             state=unknown.RootElement.Clone();Apply();
             if(hardwareHost.IsEnabled||padHost.IsEnabled||lightingHost.IsEnabled||lightingOwner.IsEnabled||startup.IsEnabled||!applicationHost.IsEnabled||unsupportedPanel.Visibility!=Visibility.Visible)throw new InvalidOperationException("Unsupported device controls enabled or updates disabled");
@@ -310,6 +334,18 @@ internal sealed class MainWindow : Window
         long style=GetWindowLongPtr(hwnd,-16).ToInt64();
         if((style&0x00C00000L)==0 || (style&0x00030000L)!=0)throw new InvalidOperationException("Native caption style failed");
         File.WriteAllText(Path.Combine(AppContext.BaseDirectory,"smoke-checks.txt"),"PASS: OpenRGB disables laptop lighting while retaining other controls; internal effects enabled for supported PID; native caption without minimize/maximize; F2 CPU/GPU; selected and actual RPM; pending slider survives polling; unavailable controls disabled. Synthetic data; no hardware controller.");
+    }
+    object KeyboardEffectCommand() {
+        var color=new int[]{keyboardColor.Color.R,keyboardColor.Color.G,keyboardColor.Color.B};
+        var color2=new int[]{keyboardColor2.Color.R,keyboardColor2.Color.G,keyboardColor2.Color.B};
+        return keyboardEffect.SelectedIndex switch {
+            0=>new {effect="off"},1=>new {effect="static",color},
+            2=>new {effect="wave",direction=waveDirection.SelectedIndex==0?"left":"right"},
+            3=>new {effect="breathing",color},4=>new {effect="spectrum"},
+            5=>new {effect="reactive",color,speed=reactiveDuration.SelectedIndex+1},
+            6=>new {effect="starlight"},7=>new {effect="breathing_dual",color,color2},
+            _=>throw new InvalidOperationException("No keyboard effect selected")
+        };
     }
     void ApplyBackground() {
         bool dark=shell.ActualTheme==ElementTheme.Dark;
@@ -417,7 +453,7 @@ internal sealed class MainWindow : Window
             lightingOwner.SelectedIndex=B("lighting_external")?1:0;
             lightingHost.IsEnabled=Supported&&B("ready")&&!B("lighting_external");
             lightingHost.Visibility=B("lighting_external")?Visibility.Collapsed:Visibility.Visible;
-            keyboardEffect.IsEnabled=keyboardColor.IsEnabled=waveDirection.IsEnabled=applyEffect.IsEnabled=B("keyboard_effect_supported");
+            keyboardEffect.IsEnabled=keyboardColor.IsEnabled=keyboardColor2.IsEnabled=reactiveDuration.IsEnabled=waveDirection.IsEnabled=applyEffect.IsEnabled=B("keyboard_effect_supported");
             lightingHint.Text=B("lighting_external")?L.T("Configure effects in OpenRGB. R-Helper Compact leaves laptop lighting unchanged, including in profiles."):B("keyboard_effect_supported")?L.T("Apply effects with the button. Brightness applies automatically. Close OpenRGB before using these controls."):L.T("Direct effects are currently available for Blade 14 (2022). Brightness and logo support depend on the device.");
             var features=A("features");
             perf.IsEnabled=features.Contains("perf");
@@ -537,6 +573,12 @@ internal sealed class MainWindow : Window
                 lightingOwner.StartBringIntoView(new BringIntoViewOptions { AnimationDesired=false,VerticalAlignmentRatio=0 });
                 await Task.Delay(180);
                 CaptureFrame(external?"winui-smoke-openrgb.png":"winui-smoke-effects.png");
+                if(!external) {
+                    keyboardEffect.SelectedIndex=7;
+                    await Task.Delay(180);
+                    CaptureFrame("winui-smoke-two-color.png");
+                    keyboardEffect.SelectedIndex=1;
+                }
             }
             using(var padSample=JsonDocument.Parse("""{"support_status":"supported","model":"UI test · synthetic data","ready":true,"fan_auto":true,"pad_connected":true,"pad_lighting":true,"pad_mode":"auto","pad_light_mode":"Static","pad_color":[18,180,90],"pad_brightness":128,"pad_min":800,"pad_max":2500,"pad_off":40,"pad_full":75}""")) {
                 state=padSample.RootElement.Clone();Apply();

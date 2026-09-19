@@ -1,4 +1,10 @@
 {
+  "Reactive": "Отклик на нажатие",
+  "Starlight": "Звёздное сияние",
+  "Two-color breathing": "Двухцветное дыхание",
+  "Second color": "Второй цвет",
+  "Fade duration": "Длительность затухания",
+  "Starlight uses a fixed green effect on this model.": "На этой модели звёздное сияние использует фиксированный зелёный эффект.",
   "Laptop model": "Модель ноутбука",
   "BIOS / EC (if known)": "BIOS / EC (если известно)",
   "Optional": "Можно оставить пустым",
