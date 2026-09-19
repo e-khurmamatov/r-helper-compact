@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.9.0 (unreleased)
+## 0.10.0 (unreleased)
+
+- Add a saved application language preference with system, English and Russian options; changes apply after restart.
+- Add real English and Russian screenshots to the README.
+- Preserve existing settings and hardware behavior; no breaking changes.
+
+## 0.9.0
 
 First independent R-Helper Compact release, forked from R-Helper 0.8.5.
 

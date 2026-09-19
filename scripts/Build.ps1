@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$OutputDirectory = 'dist/app',
-    [string]$Version = '0.9.0'
+    [string]$Version = '0.10.0'
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
