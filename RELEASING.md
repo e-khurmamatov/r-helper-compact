@@ -20,3 +20,5 @@ The in-app updater selects the highest compatible version from this repository's
 Test in-app upgrades from an installed copy, including UAC cancellation, installer failure and automatic restart. The updater waits for both the UI and controller to exit, runs MSI without automatic Windows restart, then reopens the app. Portable copies only download a ZIP. No background service or scheduled checks are installed.
 
 Run `./scripts/Test-Updates.ps1 -AppDirectory dist/app` for offline updater tests. CI runs these with simulated HTTP and installer outcomes; they do not install anything or access hardware.
+
+New release builds attest the MSI, portable ZIP and checksums. Verify a downloaded file with `gh attestation verify <file> --repo e-khurmamatov/r-helper-compact`. Attestations establish build provenance; they do not replace Windows code signing.

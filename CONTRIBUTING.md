@@ -9,3 +9,5 @@ Edit sources directly in `winui/`, `controller/` or `librazer/`. Cargo embeds `d
 For new laptops, follow [devices/README.md](devices/README.md). For UI translations, see [winui/Locales/README.md](winui/Locales/README.md).
 
 PRs should describe the change and tests performed. Hardware changes should list the model, identifiers, sources and functions actually tested. Never bypass device identification or enable experimental commands just to demonstrate the UI.
+
+Dependency updates run through pull requests and CI; do not auto-merge them. For Windows App SDK or .NET runtime updates, review the bundled texts and package mapping in `licenses/winui/` before merging.

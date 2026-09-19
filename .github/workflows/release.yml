@@ -21,6 +21,10 @@ jobs:
   build:
     runs-on: windows-2022
     timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -61,6 +65,14 @@ jobs:
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: ./scripts/Build-Installer.ps1 -Version $env:RELEASE_VERSION -DownloadTools
+      - name: Attest installer and portable archive
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: |
+            dist/releases/*.msi
+            dist/releases/*-portable.zip
+            dist/releases/SHA256SUMS.txt
+          create-storage-record: false
       - name: Upload release assets
         uses: actions/upload-artifact@v4
         with:
