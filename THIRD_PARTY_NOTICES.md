@@ -10,7 +10,7 @@ Compact adds the WinUI interface, tray behavior, device registry and build packa
 
 ## Runtime components
 
-Licenses and notices for bundled Microsoft runtime components are listed in [licenses/winui](licenses/winui/README.md). Identical texts are stored once and mapped to their packages.
+Licenses and notices for bundled .NET, Windows App SDK, WebView2 and Windows ML components are listed in [licenses/winui](licenses/winui/README.md). Identical texts are stored once and mapped to their packages.
 
 ## Acknowledgements and build tools
 

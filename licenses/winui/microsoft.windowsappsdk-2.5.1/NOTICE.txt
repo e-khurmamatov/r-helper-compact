@@ -1,11 +1,10 @@
-THIRD PARTY SOFTWARE NOTICES AND INFORMATION
-
+NOTICES AND INFORMATION
 Do Not Translate or Localize
 
-This software incorporates material from third parties. Microsoft makes certain
-open source code available at http://3rdpartysource.microsoft.com, or you may
-send a check or money order for US $5.00, including the product name, the open
-source component name, and version number, to:
+This software incorporates material from third parties.
+Microsoft makes certain open source code available at https://3rdpartysource.microsoft.com,
+or you may send a check or money order for US $5.00, including the product name,
+the open source component name, platform, and version number, to:
 
 Source Code Compliance Team
 Microsoft Corporation
@@ -13,11 +12,42 @@ One Microsoft Way
 Redmond, WA 98052
 USA
 
-Notwithstanding any other terms, you may reverse engineer this software to the
-extent required to debug changes to any libraries licensed under the GNU Lesser
-General Public License.
+Notwithstanding any other terms, you may reverse engineer this software to the extent
+required to debug changes to any libraries licensed under the GNU Lesser General Public License.
 
-_____
+---------------------------------------------------------
+
+Newtonsoft.Json 13.0.1 - MIT
+
+
+Copyright James Newton-King 2008
+Copyright (c) 2007 James Newton-King
+Copyright (c) James Newton-King 2008
+Copyright James Newton-King 2008 Json.NET
+
+The MIT License (MIT)
+
+Copyright (c) 2007 James Newton-King
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+---------------------------------------------------------
 
 Intel Math Kernel Library (Intel MKL)
 
@@ -87,7 +117,7 @@ Software.
 
 *Other names and brands may be claimed as the property of others.
 
-_____
+---------------------------------------------------------
 
 protocolbuffers/protobuf
 
@@ -126,7 +156,7 @@ of the input file used when generating it.  This code is not
 standalone and requires a support library to be linked with it.  This
 support library is itself covered by the above license.
 
-_____
+---------------------------------------------------------
 
 madler/zlib
 
@@ -169,7 +199,7 @@ If you redistribute modified sources, we would appreciate that you include in
 the file ChangeLog history information documenting your changes.  Please read
 the FAQ for more information on the distribution of modified source versions.
 
-_____
+---------------------------------------------------------
 
 pybind/pybind11
 
@@ -203,7 +233,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Please also refer to the file CONTRIBUTING.md, which clarifies licensing of
 external contributions to this project including patches, pull requests, etc.
 
-_____
+---------------------------------------------------------
 
 onnx
 Open Neural Network Exchange
@@ -412,7 +442,7 @@ Copyright (c) Facebook, Inc. and Microsoft Corporation. All rights reserved.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-_____
+---------------------------------------------------------
 
 Eigen
 
@@ -797,7 +827,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
   This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
 
-_____
+---------------------------------------------------------
 
 intel/dnnl
 
@@ -1035,7 +1065,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 Microsoft GSL
 
@@ -1061,7 +1091,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 Tensorflow
 
@@ -1269,7 +1299,7 @@ APPENDIX: How to apply the Apache License to your work.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-_____
+---------------------------------------------------------
 
 Microsoft Cognitive Toolkit (CNTK)
 
@@ -1290,7 +1320,7 @@ NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 NumPy License
 
@@ -1306,7 +1336,7 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 Pytorch / Caffe2
 
@@ -1379,7 +1409,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 Caffe
 
@@ -1428,7 +1458,7 @@ By contributing to the BVLC/caffe repository through pull-request, comment,
 or otherwise, the contributor releases their content to the
 license and copyright terms herein.
 
-_____
+---------------------------------------------------------
 
 The LLVM Compiler Infrastructure
 
@@ -1501,7 +1531,7 @@ pyyaml tests        llvm/test/YAMLParser/{*.data, LICENSE.TXT}
 ARM contributions   llvm/lib/Target/ARM/LICENSE.TXT
 md5 contributions   llvm/lib/Support/MD5.cpp llvm/include/llvm/Support/MD5.h
 
-_____
+---------------------------------------------------------
 
 google/benchmark
 
@@ -1827,7 +1857,7 @@ Yixuan Qiu <yixuanq@gmail.com>
 Yusuke Suzuki <utatane.tea@gmail.com>
 Zbigniew Skowron <zbychs@gmail.com>
 
-_____
+---------------------------------------------------------
 
 HalideIR
 
@@ -1846,7 +1876,7 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 Distributed Machine Learning Common Codebase
 
@@ -1864,7 +1894,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-_____
+---------------------------------------------------------
 
 DLPack: Open In Memory Tensor Structure
 
@@ -2070,7 +2100,7 @@ DLPack: Open In Memory Tensor Structure
    See the License for the specific language governing permissions and
    limitations under the License.
 
-_____
+---------------------------------------------------------
 
 HowardHinnant/date
 
@@ -2106,7 +2136,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 FreeBSD: getopt.c file
 
@@ -2139,7 +2169,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
-_____
+---------------------------------------------------------
 
 
 google/googletest
@@ -2173,7 +2203,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 G3log : Asynchronous logger with Dynamic Sinks
 
@@ -2201,7 +2231,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org/>
-_____
+---------------------------------------------------------
 
 Scikit-learn
 
@@ -2235,7 +2265,7 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 
-_____
+---------------------------------------------------------
 
 google/re2
 
@@ -2266,7 +2296,7 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-_____
+---------------------------------------------------------
 onnx/onnx-tensorrt
 
 MIT License
@@ -2292,7 +2322,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-_____
+---------------------------------------------------------
 nvidia/cutlass
 
 Copyright (c) 2017 - 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
@@ -2323,7 +2353,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 Boost
 
 Boost Software License - Version 1.0 - August 17th, 2003
@@ -2351,7 +2381,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-_____
+---------------------------------------------------------
 
 JDAI-CV/DNNLibrary
 
@@ -2558,7 +2588,7 @@ JDAI-CV/DNNLibrary
    limitations under the License.
 
 
-_____
+---------------------------------------------------------
 
 google/flatbuffers
 
@@ -2766,7 +2796,7 @@ google/flatbuffers
    limitations under the License.
 
 
-_____
+---------------------------------------------------------
 
 google/glog
 
@@ -2836,7 +2866,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 abseil-cpp
 https://github.com/abseil/abseil-cpp
@@ -3044,7 +3074,7 @@ https://github.com/abseil/abseil-cpp
    limitations under the License.
 
 
-_____
+---------------------------------------------------------
 
 microsoft/wil
 
@@ -3070,7 +3100,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE
 
-_____
+---------------------------------------------------------
 
 nlohmann/json
 
@@ -3096,7 +3126,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 dcleblanc/SafeInt
 
@@ -3122,7 +3152,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-_____
+---------------------------------------------------------
 Open MPI
 
 3-Clause BSD License
@@ -3228,7 +3258,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 The Android Open Source Project
 
@@ -3567,7 +3597,7 @@ libprotobuf-mutator
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
    mpi4py
    https://github.com/mpi4py/mpi4py/
@@ -3605,7 +3635,7 @@ _____
    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-_____
+---------------------------------------------------------
 huggingface/transformers
 
                                  Apache License
@@ -3809,7 +3839,7 @@ huggingface/transformers
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-_____
+---------------------------------------------------------
 msgpack/msgpack-python
 
 Copyright (C) 2008-2011 INADA Naoki <songofacandy@gmail.com>
@@ -3825,7 +3855,7 @@ Copyright (C) 2008-2011 INADA Naoki <songofacandy@gmail.com>
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-_____
+---------------------------------------------------------
 lanpa/tensorboardX
 
 MIT License
@@ -3849,7 +3879,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-_____
+---------------------------------------------------------
 tensorflow/tensorboard
 
 Copyright 2017 The TensorFlow Authors.  All rights reserved.
@@ -4057,7 +4087,7 @@ Copyright 2017 The TensorFlow Authors.  All rights reserved.
    limitations under the License.
 
 
-_____
+---------------------------------------------------------
 
 cerberus
 
@@ -4079,7 +4109,7 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 MurmurHash3
 
@@ -4094,7 +4124,7 @@ SMHasher test suite used to verify them.
 SMHasher is released under the MIT license.
 All MurmurHash versions are public domain software, and the author disclaims all copyright to their code.
 
-_____
+---------------------------------------------------------
 
 gtest-ios-framework
 
@@ -4121,7 +4151,7 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 DLPack
 
@@ -4329,7 +4359,7 @@ https://github.com/dmlc/dlpack
    See the License for the specific language governing permissions and
    limitations under the License.
 
-_____
+---------------------------------------------------------
 
 emsdk
 
@@ -4365,7 +4395,7 @@ This is the MIT/Expat License. For more information see:
 
 2. http://en.wikipedia.org/wiki/MIT_License
 
-_____
+---------------------------------------------------------
 
 coremltools
 
@@ -4386,7 +4416,7 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 © 2021 GitHub, Inc.
 
-_____
+---------------------------------------------------------
 
 react-native
 
@@ -4414,7 +4444,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 pytorch/cpuinfo
 
@@ -4450,7 +4480,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 SQLite Is Public Domain
 
@@ -4478,7 +4508,7 @@ code can be traced back to its original author, and all of those authors have
 public domain dedications on file. So the SQLite code base is clean and is
 uncontaminated with licensed code from other projects.
 
-_____
+---------------------------------------------------------
 
 google/XNNPACK
 
@@ -4514,7 +4544,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 google/sentencepiece, https://github.com/google/sentencepiece
 (included when statically linked with onnxruntime-extensions)
@@ -4721,7 +4751,7 @@ google/sentencepiece, https://github.com/google/sentencepiece
    See the License for the specific language governing permissions and
    limitations under the License.
 
-_____
+---------------------------------------------------------
 
 dlfcn-win32/dlfcn-win32 is licensed under the MIT License
 
@@ -4743,7 +4773,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 The Python Imaging Library (PIL) is
 
@@ -4776,7 +4806,7 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
 OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 openssl/openssl, https://github.com/openssl/openssl
 
@@ -4957,7 +4987,7 @@ openssl/openssl, https://github.com/openssl/openssl
 
    END OF TERMS AND CONDITIONS
 
-_____
+---------------------------------------------------------
 
 Tencent/rapidjson, https://github.com/Tencent/rapidjson
 
@@ -5019,7 +5049,7 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 boostorg/boost, https://github.com/boostorg/boost
 
@@ -5047,7 +5077,7 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 libb64/libb64, https://github.com/libb64/libb64
 
@@ -5061,7 +5091,7 @@ Dedicator makes this dedication for the benefit of the public at large and to th
 
 Dedicator recognizes that, once placed in the public domain, the Work may be freely reproduced, distributed, transmitted, used, modified, built upon, or otherwise exploited by anyone for any purpose, commercial or non-commercial, and in any way, including by methods that have not yet been invented or conceived.
 
-_____
+---------------------------------------------------------
 
 posix pthread library, https://sourceforge.net/projects/pthreads4w
 
@@ -5268,7 +5298,7 @@ posix pthread library, https://sourceforge.net/projects/pthreads4w
    See the License for the specific language governing permissions and
    limitations under the License.
 
-_____
+---------------------------------------------------------
 
 Triton Inference Server & Client, https://github.com/triton-inference-server
 
@@ -5298,7 +5328,7 @@ OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 microsoft/mimalloc, https://github.com/microsoft/mimalloc
 
@@ -5324,7 +5354,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 TensorFlow.js
 
@@ -5562,7 +5592,7 @@ Except as contained in this notice, the name of a copyright holder shall not
 be used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization of the copyright holder.
 
-_____
+---------------------------------------------------------
 
 Intel neural-compressor
 
@@ -5770,7 +5800,7 @@ https://github.com/intel/neural-compressor
    govern your use of the third party programs as set forth in the
    "THIRD-PARTY-PROGRAMS" file.
 
-_____
+---------------------------------------------------------
 
 FlashAttention, https://github.com/Dao-AILab/flash-attention
 
@@ -5804,7 +5834,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 composable_kernel
 
@@ -5839,7 +5869,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-_____
+---------------------------------------------------------
 
 neural-speed
 
@@ -6046,7 +6076,7 @@ https://github.com/intel/neural-speed
    govern your use of the third party programs as set forth in the
    "THIRD-PARTY-PROGRAMS" file.
 
-_____
+---------------------------------------------------------
 
 dawn
 
@@ -6081,7 +6111,7 @@ https://dawn.googlesource.com/dawn
    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-_____
+---------------------------------------------------------
 
 KleidiAI
 
@@ -6154,3 +6184,53 @@ Redistribution and use in source and binary forms, with or without modification,
 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---------------------------------------------------------
+
+whichlang
+
+https://github.com/quickwit-oss/whichlang
+
+Copyright (c) 2023 by Quickwit Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---------------------------------------------------------
+
+Snowball
+
+https://github.com/snowballstem/snowball/
+
+Copyright (c) 2001, Dr Martin Porter
+Copyright (c) 2004,2005, Richard Boulton
+Copyright (c) 2013, Yoshiki Shibukawa
+Copyright (c) 2006,2007,2009,2010,2011,2014-2019, Olly Betts
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+  1. Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright notice,
+     this list of conditions and the following disclaimer in the documentation
+     and/or other materials provided with the distribution.
+  3. Neither the name of the Snowball project nor the names of its contributors
+     may be used to endorse or promote products derived from this software
+     without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
