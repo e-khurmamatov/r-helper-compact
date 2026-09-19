@@ -1,4 +1,0 @@
-#include <windows.h>
-
-// Primary application icon (resource ID 1) for Explorer, taskbar, and WM_SETICON
-1 ICON "rhelper.ico"

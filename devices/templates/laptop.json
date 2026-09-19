@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "name": "Razer Blade MODEL (YEAR)",
+  "pid": "FFFF",
+  "sku_prefixes": [
+    "RZ09-9999"
+  ],
+  "enabled": false,
+  "protocol": "Legacy4",
+  "keyboard_protocol": "none",
+  "verification": "candidate",
+  "source": "https://github.com/OWNER/REPOSITORY/issues/NUMBER",
+  "notes": "Describe evidence. Maintainer must review protocol and identity before enabling."
+}

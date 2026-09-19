@@ -78,61 +78,12 @@ pub struct PidProfile {
     pub marketing_name: &'static str,
 }
 
-/// Known USB PIDs mapped to firmware generation (one entry per hardware revision).
-pub const KNOWN_PROFILES: &[PidProfile] = &[
-    // Legacy4
-    PidProfile {
-        pid: 0x0279,
-        generation: BladeGeneration::Legacy4,
-        marketing_name: "Razer Blade 17 (2021)",
-    },
-    PidProfile {
-        pid: 0x026d,
-        generation: BladeGeneration::Legacy4,
-        marketing_name: "Razer Blade 15 Advanced (2021)",
-    },
-    PidProfile {
-        pid: 0x028c,
-        generation: BladeGeneration::Legacy4,
-        marketing_name: "Razer Blade 14 (2022)",
-    },
-    PidProfile {
-        pid: 0x028b,
-        generation: BladeGeneration::Legacy4,
-        marketing_name: "Razer Blade 17 (2022)",
-    },
-    PidProfile {
-        pid: 0x029c,
-        generation: BladeGeneration::Legacy4,
-        marketing_name: "Razer Blade 15 (2023)",
-    },
-    PidProfile {
-        pid: 0x028a,
-        generation: BladeGeneration::Legacy4,
-        marketing_name: "Razer Blade 15 (2022)",
-    },
-    PidProfile {
-        pid: 0x029d,
-        generation: BladeGeneration::Legacy4,
-        marketing_name: "Razer Blade 14 (2023)",
-    },
-    PidProfile {
-        pid: 0x029f,
-        generation: BladeGeneration::Legacy4,
-        marketing_name: "Razer Blade 16 (2023)",
-    },
-    // Modern6
-    PidProfile {
-        pid: 0x02c5,
-        generation: BladeGeneration::Modern6,
-        marketing_name: "Razer Blade 14 (2025)",
-    },
-    PidProfile {
-        pid: 0x02c6,
-        generation: BladeGeneration::Modern6,
-        marketing_name: "Razer Blade 16 (2025)",
-    },
-];
+/// Profiles derive from the reviewed, compiled JSON registry.
+pub static KNOWN_PROFILES: std::sync::LazyLock<Vec<PidProfile>> = std::sync::LazyLock::new(|| {
+    crate::device_registry::records().unwrap_or(&[]).iter().filter(|r|r.enabled).map(|r|PidProfile {
+        pid:r.product_id(),generation:r.generation(),marketing_name:r.name.as_str()
+    }).collect()
+});
 
 pub const GENERIC_FALLBACK: PidProfile = PidProfile {
     pid: 0,
@@ -152,87 +103,22 @@ pub fn lookup_profile_or_fallback(pid: u16) -> &'static PidProfile {
     lookup_profile(pid).unwrap_or(&GENERIC_FALLBACK)
 }
 
-/// Resolve firmware generation from PID table, then SystemSKU, then generic fallback.
+/// Unknown or mismatched identity never implies a command family.
 pub fn resolve_generation(pid: u16, model_sku: &str) -> BladeGeneration {
-    if let Some(profile) = lookup_profile(pid) {
-        return profile.generation;
-    }
-    let from_sku = infer_generation_from_sku(model_sku);
-    if from_sku != BladeGeneration::Discovery {
-        from_sku
-    } else {
-        GENERIC_FALLBACK.generation
-    }
+    crate::device_registry::records().ok()
+        .and_then(|rows|crate::device_registry::select(rows,&[pid],model_sku).ok())
+        .map(|r|r.generation()).unwrap_or(BladeGeneration::Discovery)
 }
-
-/// Infer generation from SystemSKU when PID is unknown (first 10 chars per Razer support doc).
-pub fn infer_generation_from_sku(sku: &str) -> BladeGeneration {
-    if sku.starts_with("RZ09-05") {
-        return BladeGeneration::Modern6;
-    }
-    if sku.starts_with("RZ09-048") || sku.starts_with("RZ09-042") {
-        return BladeGeneration::Legacy4;
-    }
-    BladeGeneration::Discovery
-}
-
-#[cfg(test)]
-mod tests {
+#[cfg(test)] mod tests {
     use super::*;
-
-    #[test]
-    fn sku_inference_modern6() {
-        assert_eq!(infer_generation_from_sku("RZ09-0528"), BladeGeneration::Modern6);
-        assert_eq!(infer_generation_from_sku("RZ09-05306"), BladeGeneration::Modern6);
+    #[test] fn exact_identity_resolves_generation() {
+        assert_eq!(resolve_generation(0x028c,"RZ09-0427NE"),BladeGeneration::Legacy4);
+        assert_eq!(resolve_generation(0x02c6,"RZ09-0528AA"),BladeGeneration::Modern6);
     }
-
-    #[test]
-    fn sku_inference_legacy4() {
-        assert_eq!(infer_generation_from_sku("RZ09-0421"), BladeGeneration::Legacy4);
-        assert_eq!(infer_generation_from_sku("RZ09-04854"), BladeGeneration::Legacy4);
-    }
-
-    #[test]
-    fn sku_inference_discovery() {
-        assert_eq!(infer_generation_from_sku("RZ09-09999"), BladeGeneration::Discovery);
-    }
-
-    #[test]
-    fn lookup_known_pid() {
-        let p = lookup_profile(0x02c6).unwrap();
-        assert_eq!(p.generation, BladeGeneration::Modern6);
-    }
-
-    #[test]
-    fn lookup_unknown_pid() {
+    #[test] fn unknown_pid_and_wrong_sku_never_inherit_modern_commands() {
+        assert_eq!(resolve_generation(0xffff,"RZ09-0528"),BladeGeneration::Discovery);
+        assert_eq!(resolve_generation(0x028c,"RZ09-0528"),BladeGeneration::Discovery);
         assert!(lookup_profile(0xffff).is_none());
-    }
-
-    #[test]
-    fn formerly_discovery_pids_are_legacy4() {
-        for pid in [0x028a, 0x029d, 0x029f] {
-            assert_eq!(lookup_profile(pid).unwrap().generation, BladeGeneration::Legacy4);
-        }
-    }
-
-    #[test]
-    fn lookup_profile_or_fallback_known_and_unknown() {
-        assert_eq!(lookup_profile_or_fallback(0x02c6).pid, 0x02c6);
-        assert_eq!(lookup_profile_or_fallback(0xffff).pid, GENERIC_FALLBACK.pid);
-    }
-
-    #[test]
-    fn resolve_generation_prefers_pid_over_sku() {
-        assert_eq!(resolve_generation(0x0279, "RZ09-0528"), BladeGeneration::Legacy4);
-    }
-
-    #[test]
-    fn resolve_generation_uses_sku_when_pid_unknown() {
-        assert_eq!(resolve_generation(0xffff, "RZ09-0528"), BladeGeneration::Modern6);
-    }
-
-    #[test]
-    fn resolve_generation_falls_back_to_discovery() {
-        assert_eq!(resolve_generation(0xffff, "RZ09-09999"), BladeGeneration::Discovery);
+        assert!(lookup_profile(0x029c).is_none());
     }
 }

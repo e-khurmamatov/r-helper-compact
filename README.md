@@ -1,55 +1,42 @@
-> [!WARNING]  
-> Note from Fatalution: I returned my Blade 16.    
+# R-Helper Compact
 
-# R-Helper
+<img src="assets/rhelper.svg" alt="R-Helper Compact" width="96" height="96">
 
-A Windows application to control Razer Blade settings w/o Synapse.
+Control performance modes, fan speeds, keyboard lighting and battery charge limits on Razer Blade laptops from the Windows system tray.
 
-<img width="332" height="388" alt="image" src="https://github.com/user-attachments/assets/3a4630d8-d79a-4e6b-b6a6-df4f1f52bdb9" />
+[Releases](https://github.com/e-khurmamatov/r-helper-compact/releases) · [Report an issue](https://github.com/e-khurmamatov/r-helper-compact/issues/new/choose) · [Русский](README.ru.md)
 
 ## Features
 
-- Performance modes: Battery, Silent, Balanced, Performance, Hyperboost, Custom
-- Custom mode: CPU/GPU Low/Medium/High/Boost adjustments with experimental Undervolt option (no idea what it does as it's a preset)
-- Fan control: Auto/Manual, with current RPM display
-- Keyboard backlight brightness control
-- Logo lighting: Static, Breathing, Off
-- Battery care: Toggle charging threshold (80%)
-- **Razer Laptop Cooling Pad** (USB `1532:0F43`): fan on/off with RPM control (500–3200), underglow lighting (Off / Static / Breathing + brightness)
+- Performance modes, fan control and battery charge limits.
+- Two-minute CPU/GPU temperature charts and adaptive background polling.
+- Keyboard lighting effects and an option to leave lighting to OpenRGB.
+- AC/battery profiles and Cooling Pad controls.
+- Reorderable sections, startup settings and automatic UI language selection.
 
-> **Cooling pad note:** Close Razer Synapse or set the pad to Manual there before using r-helper — both apps control the pad over USB HID and will conflict otherwise. The pad has no real RPM sensor; displayed RPM is the last commanded value.
+Support varies by model and firmware. Unknown laptops are blocked from hardware control. See [the device registry](devices/README.md) to request or contribute support.
 
+## Install
 
-## Installation
+Download the x64 MSI or portable ZIP from Releases. The MSI installs to Program Files; extract the entire portable ZIP before running `rhelper-compact.exe`. Left-click the tray icon to open settings; right-click for quick controls and Quit. Close the app before upgrading.
 
-1. Download the latest release
-2. Run `rhelper.exe`
+Settings are stored in `%APPDATA%/r-helper-compact/`. English and Russian are included; the app follows the Windows display language and falls back to English. Builds are currently unsigned.
 
-## Building
+Open **Application → Check for updates** to check GitHub Releases. Installed copies can download a verified MSI and restart after updating; Windows may request administrator permission. Portable copies download a ZIP to extract manually. Checks are manual; preview builds also receive prereleases. Update downloads and installer logs are stored in `%LOCALAPPDATA%/r-helper-compact/updates/`.
 
-One command — release build **and** copy to `dist/rhelper-<version>.exe`:
+## Build
 
-```powershell
-.\scripts\build-release.ps1
-```
-
-To refresh `dist/` from an existing release build (no compile):
+Requires Windows x64, PowerShell 7, Python 3.11+, Visual Studio C++ Build Tools with the Windows SDK, Rust 1.98.1 (MSVC) and .NET SDK 10.0.401.
 
 ```powershell
-.\scripts\copy-release.ps1
+.\scripts/Build.ps1
+python -m unittest discover -s tests -v
 ```
 
-Plain `cargo build --release` only writes `target\release\rhelper.exe`; it does **not** update `dist/`.
+The repository contains all project sources. `controller/` owns hardware orchestration and the private JSON protocol, `librazer/` owns device protocols, and `winui/` owns the interface. `devices/` contains laptop definitions. Cargo compiles the registry automatically. `rust-toolchain.toml`, `global.json` and the Cargo/NuGet lock files pin the toolchains and dependencies. Fork provenance is recorded in `THIRD_PARTY_NOTICES.md`. No upstream checkout or patch application is needed.
 
-## Architecture
-
-Core device control via locally vendored `librazer` (derived from razer-ctl)
-
+[Contributing](CONTRIBUTING.md) · [Translations](winui/Locales/README.md) · [Release builds](RELEASING.md)
 
 ## License
 
-MIT. Includes MIT-licensed portions derived from razer-ctl (see NOTICE and THIRD_PARTY_LICENSES.md).
-
-## Support
-
-If you really want to express gratitude: [PayPal Donation](https://www.paypal.com/paypalme/fatalutionDE)
+Forked from [R-Helper 0.8.5](https://github.com/Robak08/r-helper/tree/8f4ac7b2bc5b2cd077d73254dddb6873d1a5cab6), under MIT. Original author notices are preserved in [LICENSE](LICENSE), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [THIRD_PARTY_LICENSES.md](licenses/THIRD_PARTY_LICENSES.md). Independent project; not affiliated with Razer.

@@ -1,0 +1,49 @@
+name: Build R-Helper Compact (Windows)
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.401
+      - name: Select validated Rust toolchain (MSVC)
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.98.1 --profile minimal --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup override set 1.98.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build controller and WinUI; run tests
+        shell: pwsh
+        run: |
+          ./scripts/Build.ps1
+          ./scripts/Test-Updates.ps1
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload build and license notices
+        uses: actions/upload-artifact@v4
+        with:
+          name: rhelper-compact-windows-x64
+          path: dist/app/
+          if-no-files-found: error
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: |
+            work/logs/build.log
+            work/logs/updates-*.txt
+          if-no-files-found: ignore

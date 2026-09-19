@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "name": "Razer Blade 15 Advanced (2021)",
+  "pid": "026D",
+  "sku_prefixes": [
+    "RZ09-0367",
+    "RZ09-0409"
+  ],
+  "enabled": true,
+  "protocol": "Legacy4",
+  "keyboard_protocol": "none",
+  "verification": "upstream_profile",
+  "source": "https://github.com/Robak08/r-helper/blob/8f4ac7b2bc5b2cd077d73254dddb6873d1a5cab6/librazer/src/profile.rs",
+  "notes": "SKU identifies chassis; Windows hardware behavior must be verified per capability. SKU reference: https://mysupport.razer.com/app/answers/detail/a_id/13994 and https://mysupport.razer.com/app/answers/detail/a_id/3551; Blade 15 Advanced 0367/0409: https://www.razer.com/br-pt/pc/gaming-laptops/skins. Checked 2026-09-19."
+}

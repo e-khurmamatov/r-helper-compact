@@ -1,24 +1,24 @@
-# Build outputs
-/target/
-/target-dep-test/
-**/*.d
-**/*.pdb
-
-# OS junk
-Thumbs.db
-.DS_Store
-
-# IDE/editor
-.vscode/
-.idea/
-
-# Local artifacts
-rhelper-distribution/*.zip
-rhelper-distribution/*.exe
-rhelper.zip
-*.zip
+/work/
+/dist/
 *.log
-dist/
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
+.vs/
+.idea/
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
 
-# Exclude CLI tool (local only)
-razer-cli/
+/winui/bin/
+/winui/obj/
+
+# Local handoff notes, not project documentation.
+/VALIDATION.md
+
+/target/
