@@ -53,6 +53,7 @@ try {
     Copy-Item -LiteralPath (Join-Path $Root 'README.ru.md') -Destination $Dist -Force
     New-Item -ItemType Directory -Path (Join-Path $Dist 'assets') -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $Root 'assets/rhelper.svg') -Destination (Join-Path $Dist 'assets/rhelper.svg') -Force
+    Copy-Item -LiteralPath (Join-Path $Root 'assets/screenshots') -Destination (Join-Path $Dist 'assets') -Recurse -Force
     Copy-Item -LiteralPath (Join-Path $Root 'licenses') -Destination $Dist -Recurse -Force
     $Publish = Join-Path $Root ('work/winui-publish-' + [Guid]::NewGuid().ToString('N'))
     & dotnet publish (Join-Path $Root 'winui/RHelper.Compact.csproj') -c Release -r win-x64 --self-contained true -p:RestoreLockedMode=true -o $Publish "-p:Version=$Version" "-p:ApplicationIcon=$Root/assets/rhelper.ico"
