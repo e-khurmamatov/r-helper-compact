@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "name": "Razer Blade 15 (2023)",
+  "pid": "029E",
+  "sku_prefixes": [
+    "RZ09-0485"
+  ],
+  "enabled": false,
+  "protocol": "Unverified",
+  "keyboard_protocol": "none",
+  "verification": "candidate",
+  "source": "https://github.com/openrazer/openrazer/blob/master/driver/razerkbd_driver.h",
+  "notes": "Identity reference only, checked 2026-09-20. PID evidence: https://github.com/openrazer/openrazer/blob/master/driver/razerkbd_driver.h. Chassis SKU: https://mysupport.razer.com/app/categories/m/pc/s/gaming-laptops. No Compact hardware test or Windows control-protocol confirmation. This disabled profile supplies no model-specific commands; the separate Razer-host experimental discovery policy may permit generic controls after identifying one Blade HID controller. The inherited 029C record remains disabled; do not treat the two PIDs as interchangeable."
+}

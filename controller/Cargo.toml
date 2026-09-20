@@ -1,6 +1,6 @@
 [package]
 name = "rhelper-controller"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2024"
 description = "R-Helper Compact hardware controller"
 authors = ["Fatalution", "R-Helper Compact contributors"]

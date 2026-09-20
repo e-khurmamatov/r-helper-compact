@@ -129,34 +129,51 @@ impl Device {
         }
     }
 
-    /// Enumerates identifiers and reads BIOS SKU only. Never opens HID or probes firmware.
+    /// Enumerates metadata and BIOS identity only; never opens a control handle.
+    fn control_identity() -> Result<(device_registry::ControlTarget, String)> {
+        let sku=read_device_model().unwrap_or_default();
+        let maker=read_bios_value("SystemManufacturer").unwrap_or_default();
+        let entries=crate::enumerate::list_razer_hid_devices()?;
+        let pids:Vec<_>=entries.iter().map(|i|i.pid).collect();
+        let blade_pids:Vec<_>=entries.iter().filter(|i|device_registry::blade_product(i.product_string.as_deref().unwrap_or(""))).map(|i|i.pid).collect();
+        let target=device_registry::resolve_target(device_registry::records()?,&pids,&blade_pids,&sku,&maker)?;
+        Ok((target,sku))
+    }
+
+    /// Report identifiers only. Never include serials, device paths or raw errors.
     pub fn support_report() -> SupportReport {
         let sku=read_device_model().unwrap_or_default();
-        let api=hidapi::HidApi::new();
-        let (pids,hid): (Vec<u16>,Vec<String>)=match api.as_ref() {
-            Ok(api)=>api.device_list().filter(|i|i.vendor_id()==Self::RAZER_VID)
-                .map(|i|(i.product_id(),format!("1532:{:04X} interface={} usage={:04X}:{:04X}",i.product_id(),i.interface_number(),i.usage_page(),i.usage()))).unzip(),
-            Err(_)=>(Vec::new(),Vec::new()),
+        let maker=read_bios_value("SystemManufacturer").unwrap_or_default();
+        let identity=device_registry::host_identity(&maker,&sku).to_string();
+        let entries=crate::enumerate::list_razer_hid_devices();
+        let mut hid=Vec::new();
+        let selection=match &entries {
+            Ok(entries)=>{
+                let pids:Vec<_>=entries.iter().map(|i|i.pid).collect();
+                let blade_pids:Vec<_>=entries.iter().filter(|i|device_registry::blade_product(i.product_string.as_deref().unwrap_or(""))).map(|i|i.pid).collect();
+                hid=entries.iter().map(|i|format!("1532:{:04X} interface={} usage={:04X}:{:04X}",i.pid,i.interface_number,i.usage_page,i.usage)).collect();
+                device_registry::records().and_then(|r|device_registry::resolve_target(r,&pids,&blade_pids,&sku,&maker))
+            },
+            Err(_)=>Err(anyhow!("Could not enumerate HID devices. Controls are disabled.")),
         };
-        let selection=device_registry::records().and_then(|r|device_registry::select(r,&pids,&sku));
-        let (supported,reason)=match selection {
-            Ok(model)=>(true,format!("{}: model is registered",model.name)),
-            Err(error)=>(false,format!("{error}")),
+        let (supported,experimental,model,reason)=match selection {
+            Ok(target)=>(true,target.experimental,target.name,if target.experimental {
+                "Experimental support: this laptop has not been verified with Compact. Some controls may not work."
+            } else { "User-confirmed registry profile." }.to_string()),
+            Err(error)=>(false,false,String::new(),error.to_string()),
         };
-        let reason=if api.is_err() { "Could not enumerate HID devices. Controls are disabled.".into() } else { reason };
-        SupportReport { supported,sku,hid,reason }
+        let machine=crate::diagnostics::read(&sku,identity=="razer");
+        SupportReport { machine,supported,experimental,identity,model,sku,hid,reason }
     }
+
     pub fn detect() -> Result<Device> {
-        let (pid_list, model_sku) = Device::enumerate()?;
-        device_registry::open_registered(&pid_list,&model_sku,|model| {
-            // No HID handle, probe or init command exists before authorization above.
-            let mut device = Self::open_by_pid(model.product_id())?;
-            let generation=model.generation();
-            let probed = probe_features(&device);
-            device.info = resolve_descriptor(model_sku.clone(),model.name.clone(),model.product_id(),generation,probed);
-            let init_cmds = generation.default_init_cmds();
-            if !init_cmds.is_empty() { run_init_cmds(&device, init_cmds)?; }
-            Ok(device)
-        })
+        // Re-evaluate host and controller identity immediately before opening HID.
+        let (target,model_sku)=Self::control_identity()?;
+        let mut device=Self::open_by_pid(target.pid)?;
+        let probed=probe_features(&device);
+        device.info=resolve_descriptor(model_sku,target.name,target.pid,target.generation,probed);
+        let init_cmds=target.generation.default_init_cmds();
+        if !init_cmds.is_empty() { run_init_cmds(&device,init_cmds)?; }
+        Ok(device)
     }
 }

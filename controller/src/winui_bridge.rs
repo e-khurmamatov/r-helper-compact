@@ -117,7 +117,7 @@ impl Controller {
             state["actual_rpm"] = Value::Null;
         }
         state["support_status"] = json!(if self.device_support.supported {
-            "supported"
+            if self.device_support.experimental { "experimental" } else { "supported" }
         } else {
             "unsupported"
         });
