@@ -7,7 +7,11 @@ on:
 permissions:
   contents: read
 jobs:
+  changes:
+    uses: ./.github/workflows/change-scope.yml
   build:
+    needs: changes
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.run_checks != 'false') }}
     runs-on: windows-2022
     timeout-minutes: 35
     steps:
