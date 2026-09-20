@@ -1,8 +1,10 @@
 # Releases
 
+Version 0.12.0 adds experimental discovery for identified Razer Blade hosts, ten identity candidates, clearer compatibility status and local diagnostic reports with automatic model/BIOS/EC fields. Candidate identities and synthetic UI checks do not establish hardware compatibility. Non-Razer hosts, missing identity and ambiguous Blade controllers remain blocked. Review the compatibility tables in both READMEs before publishing.
+
 ```powershell
-.\scripts/Build.ps1 -OutputDirectory dist/app -Version 0.11.0
-.\scripts/Build-Installer.ps1 -Version 0.11.0 -DownloadTools
+.\scripts/Build.ps1 -OutputDirectory dist/app -Version 0.12.0
+.\scripts/Build-Installer.ps1 -Version 0.12.0 -DownloadTools
 ```
 
 Outputs are the x64 MSI, portable ZIP and SHA256SUMS.txt in `dist/releases`. Logs are in `work/logs`. WiX is downloaded to `work/tools` and checked against a pinned SHA-256; MSI validation remains enabled.
@@ -11,7 +13,7 @@ The MSI installs to Program Files and registers the application in Windows. It d
 
 ## GitHub
 
-PRs and pushes to main run the Windows build. Manually running the release workflow produces artifacts without publishing. Pushing a version tag such as `v0.11.0` builds and publishes MSI, ZIP and checksums to [Releases](https://github.com/e-khurmamatov/r-helper-compact/releases). Existing releases are not overwritten.
+PRs and pushes to main run the Windows build. Manually running the release workflow produces artifacts without publishing. Pushing a version tag such as `v0.12.0` builds and publishes MSI, ZIP and checksums to [Releases](https://github.com/e-khurmamatov/r-helper-compact/releases). Existing releases are not overwritten.
 
 Before tagging, test installation, upgrade and uninstall on a clean Windows system. Test hardware changes on the relevant laptop; compilation and UI smoke tests do not verify hardware behavior.
 

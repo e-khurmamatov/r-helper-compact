@@ -1,3 +1,4 @@
+# Local build outputs and agent artifacts (including work/agent-artifacts/).
 /work/
 /dist/
 *.log

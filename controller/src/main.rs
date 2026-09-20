@@ -67,7 +67,7 @@ use laptop_fan_cap::{LaptopFanCapShared, spawn_laptop_fan_cap_enforcer};
 use messaging::{MessageManager, error_message, status_message};
 use power::get_power_state;
 use session_lock::{DeviceSlot, SessionState, new_device_slot, spawn_session_lock_monitor};
-use system::{SystemSpecs, ThermalSnapshot, get_system_specs, resolve_device_model};
+use system::{SystemSpecs, ThermalSnapshot, get_system_specs};
 use thermal_poll::spawn_thermal_poller;
 
 // Dynamic app metadata from Cargo
@@ -712,7 +712,7 @@ impl Controller {
             dev.with(|d| {
                 let info = d.info();
                 self.system_specs.device_model =
-                    resolve_device_model(Some(&info.display_name), Some(info.pid));
+                    info.display_name.clone();
             });
         }
         self.cache_performance_metadata();
@@ -1149,7 +1149,7 @@ impl Controller {
                         device.with(|d| {
                             let info = d.info();
                             self.system_specs.device_model =
-                                resolve_device_model(Some(&info.display_name), Some(info.pid));
+                                info.display_name.clone();
                         });
                     } else {
                         self.system_specs.device_model = specs.device_model;

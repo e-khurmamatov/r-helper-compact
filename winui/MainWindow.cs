@@ -23,7 +23,7 @@ internal sealed class MainWindow : Window
     readonly DeviceIssuePanel unsupportedPanel=new() { Visibility=Visibility.Collapsed };
     readonly ContentControl applicationHost=new() { HorizontalContentAlignment=HorizontalAlignment.Stretch };
     readonly UpdatePanel updates;
-    bool Supported=>S("support_status")=="supported";
+    bool Supported=>S("support_status") is "supported" or "experimental";
     readonly ScrollViewer scroll=new() { HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=ScrollBarVisibility.Auto };
     readonly Forms.NativeWindow trayOwner=new();
     readonly StackPanel content=new() { Spacing=8, Padding=new Thickness(12) };
@@ -96,6 +96,7 @@ internal sealed class MainWindow : Window
         brightnessCommand=new((value,valid)=>Send("brightness",value,valid),()=>!quitting&&B("ready")&&!B("lighting_external")&&lightingOwner.SelectedIndex==0);
         Title="R-Helper Compact";
         hwnd=WinRT.Interop.WindowNative.GetWindowHandle(this);
+        unsupportedPanel.WindowHandle=hwnd;
         appIcon=System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? (System.Drawing.Icon)System.Drawing.SystemIcons.Application.Clone();
         SendMessage(hwnd,0x80,0,appIcon.Handle);SendMessage(hwnd,0x80,1,appIcon.Handle);
         var presenter=(OverlappedPresenter)AppWindow.Presenter;
@@ -114,7 +115,7 @@ internal sealed class MainWindow : Window
         AppWindow.MoveAndResize(new RectInt32(-32000,-32000,500,760));
         HidePopup();
         shell.ActualThemeChanged+=(_,_)=>ApplyBackground();
-        content.Children.Add(model); content.Children.Add(telemetry);content.Children.Add(readingAge);content.Children.Add(temperatureChart); content.Children.Add(errors);content.Children.Add(unsupportedPanel);
+        content.Children.Add(model);content.Children.Add(unsupportedPanel);content.Children.Add(telemetry);content.Children.Add(readingAge);content.Children.Add(temperatureChart);content.Children.Add(errors);
         reconnect=ActionButton(L.T("Reconnect"),async()=> { CancelSliderEdits();await Send("reconnect"); });content.Children.Add(reconnect);
         content.Children.Add(organizer);
         perf.PlaceholderText=L.T("Mode unavailable");cpu.Visibility=gpu.Visibility=Visibility.Collapsed;
@@ -278,6 +279,7 @@ internal sealed class MainWindow : Window
         Update();
     }
     void CheckSmokeState() {
+        DeviceIssuePanel.SmokeTest();
         // Synthetic values only in the explicit controller-free smoke test.
         using var sample=JsonDocument.Parse("""{"support_status":"supported","logo":"Off","model":"UI test · synthetic data","cpu_temp":59.050018310546875,"gpu_temp":49.0,"actual_rpm":3200,"fan_rpm":4000,"fan_auto":false,"mode":"Balanced","modes":["Balanced"],"brightness":89,"ready":false,"pad_connected":false}""");
         state=sample.RootElement.Clone();Apply();
@@ -328,6 +330,14 @@ internal sealed class MainWindow : Window
         using(var unknown=JsonDocument.Parse("""{"support_status":"unsupported","ready":true,"pad_connected":true,"support_report":{"sku":"RZ09-9999","hid":["1532:FFFF"],"reason":"Synthetic unsupported model"}}""")) {
             state=unknown.RootElement.Clone();Apply();
             if(hardwareHost.IsEnabled||padHost.IsEnabled||lightingHost.IsEnabled||lightingOwner.IsEnabled||startup.IsEnabled||!applicationHost.IsEnabled||unsupportedPanel.Visibility!=Visibility.Visible)throw new InvalidOperationException("Unsupported device controls enabled or updates disabled");
+        }
+        using(var hostile=JsonDocument.Parse("""{"sku":"RZ09-0510-SERIAL_SECRET","hid":["1532:02B7 interface=0 usage=0001:0006","1532:02B7 interface=0 usage=0001:0006 SERIAL_SECRET"],"reason":"C:\\Users\\PRIVATE_SECRET token=SECRET","serial":"SERIAL_SECRET"}""")) {
+            unsupportedPanel.Update(hostile.RootElement,"PRIVATE_SECRET");
+            if(unsupportedPanel.ReportText.Contains("SECRET")||!unsupportedPanel.ReportText.Contains("RZ09-0510")||!unsupportedPanel.ReportText.Contains("1532:02B7 interface=0 usage=0001:0006"))
+                throw new InvalidOperationException("Diagnostic privacy allowlist failed");
+            File.WriteAllText(Path.Combine(AppContext.BaseDirectory,"synthetic-diagnostics.txt"),unsupportedPanel.ReportText);
+            if(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"synthetic-diagnostics.txt"))!=unsupportedPanel.ReportText)
+                throw new InvalidOperationException("Diagnostic export round trip failed");
         }
         if(DeviceIssuePanel.ValidateRepository("") is not null || DeviceIssuePanel.ValidateRepository("https://example.com/a/b") is not null || DeviceIssuePanel.ValidateRepository("https://github.com/a/b")!="https://github.com/a/b")throw new InvalidOperationException("Issue repository validation failed");
         state=sample.RootElement.Clone();Apply();
@@ -425,12 +435,19 @@ internal sealed class MainWindow : Window
         syncing=true;
         try {
             bool unsupported=S("support_status")=="unsupported";
+            bool showSupport=unsupported||S("support_status")=="experimental";
             organizer.IsEnabled=Supported;
             padStatus.Text=B("pad_connected")?L.T("Connected"):L.T("Not connected");
-            unsupportedPanel.Visibility=unsupported?Visibility.Visible:Visibility.Collapsed;
+            unsupportedPanel.Visibility=showSupport?Visibility.Visible:Visibility.Collapsed;
             startup.IsEnabled=Supported;
-            if(unsupported && state.TryGetProperty("support_report",out var report))unsupportedPanel.Update(report,S("model"));
-            model.Text=S("model");RefreshReadings();temperatureChart.Update(state);
+            if(showSupport && state.TryGetProperty("support_report",out var report))unsupportedPanel.Update(report,S("model"),B("ready"),S("connection_error")!="—");
+            model.Text=L.T(S("model"));
+            if(S("model")=="Razer Blade (unregistered model)"&&state.TryGetProperty("support_report",out var identityReport)&&identityReport.TryGetProperty("sku",out var chassis)&&chassis.ValueKind==JsonValueKind.String)
+                model.Text+=" · "+DeviceIssuePanel.SafeSku(chassis.GetString()??"");
+            model.TextWrapping=TextWrapping.Wrap;
+            RefreshReadings();temperatureChart.Update(state);
+            telemetry.Visibility=readingAge.Visibility=temperatureChart.Visibility=unsupported?Visibility.Collapsed:Visibility.Visible;
+            if(!unsupported&&string.IsNullOrEmpty(readingAge.Text))readingAge.Visibility=Visibility.Collapsed;
             Options(perf,A("modes"),S("mode"));Options(cpu,A("cpu_options"),S("cpu_boost"));Options(gpu,A("gpu_options"),S("gpu_boost"));
             cpu.IsEnabled=gpu.IsEnabled=S("mode")=="Custom";
             cpu.Visibility=gpu.Visibility=S("mode")=="Custom"?Visibility.Visible:Visibility.Collapsed;
@@ -442,8 +459,9 @@ internal sealed class MainWindow : Window
             cap.IsOn=B("cap_enabled");SelectChoice(logo,S("logo"));SelectChoice(battery,S("battery"));lights.IsOn=B("lights");startup.IsOn=B("startup");profiles.IsOn=B("auto_profiles");
             profileInfo.Text=L.F("AC: {0} · Battery: {1}",S("ac_profile"),S("battery_profile"));
             info.Text=$"{S("cpu_name")}\n{string.Join(", ",A("gpus"))}\nRAM: {S("ram")} GB\nHID: {S("hid_pid")}\n{L.T("Features")}: {string.Join(", ",A("features"))}\n{L.T("Log")}: %APPDATA%\\r-helper-compact\\controller.log\nCooling Pad: {(B("pad_connected")?S("pad_rpm")+" RPM":L.T("Not connected"))}";
-            status.Text=B("ready")?L.T("HID connected · controls available"):L.T(S("connection_error"))!="—"?L.T("HID unavailable: ")+L.T(S("connection_error")):L.T("Connecting to HID… Model name is provided by Windows.");
-            if(L.T(S("connection_error"))!="—") { errors.Message=L.T(S("connection_error"));errors.IsOpen=true; }
+            status.Text=Supported&&B("ready")?L.T("HID connected · controls available"):L.T(S("connection_error"))!="—"?L.T("HID unavailable: ")+L.T(S("connection_error")):L.T("Connecting to HID… Model name is provided by Windows.");
+            if(unsupported)errors.IsOpen=false;
+            else if(L.T(S("connection_error"))!="—") { errors.Message=L.T(S("connection_error"));errors.IsOpen=true; }
             else if(B("ready") && errors.Message==lastConnectionError)errors.IsOpen=false;
             lastConnectionError=L.T(S("connection_error"));
             reconnect.Visibility=B("ready")?Visibility.Collapsed:Visibility.Visible;
@@ -592,6 +610,33 @@ internal sealed class MainWindow : Window
                 state=unknown.RootElement.Clone();Apply();scroll.ChangeView(null,0,null,true);
                 await Task.Delay(250);CaptureFrame("winui-smoke-unsupported.png");
             }
+            foreach(var scenario in new[]{"verified","known-experimental","unknown-razer","non-razer","razer-no-hid"}) {
+                bool enabled=scenario is "verified" or "known-experimental" or "unknown-razer";
+                bool experimental=scenario is "known-experimental" or "unknown-razer";
+                string name=scenario=="verified"?"Razer Blade 14 (2022)":scenario=="known-experimental"?"Razer Blade 16 (2023)":scenario=="non-razer"?"Not a Razer Blade laptop":"Razer Blade (unregistered model)";
+                Title="R-Helper Compact · "+L.T("Synthetic preview");
+                string reason=enabled?(experimental?"Experimental support: this laptop has not been verified with Compact. Some controls may not work.":"User-confirmed registry profile."):
+                    scenario=="non-razer"?"This computer is not identified as a Razer Blade laptop. Controls are disabled.":"Razer laptop detected, but its Blade HID controller could not be identified. Controls are disabled.";
+                using var flow=JsonDocument.Parse(JsonSerializer.Serialize(new {
+                    support_status=experimental?"experimental":enabled?"supported":"unsupported",ready=enabled,model=name,
+                    support_report=new {supported=enabled,experimental,identity=scenario=="non-razer"?"non_razer":"razer",machine=new {model="Razer Blade 16",model_source="windows_family",bios_version="1.09",ec_version=(string?)null},model=name,sku=scenario=="verified"?"RZ09-0427":scenario=="known-experimental"?"RZ09-0483":scenario=="non-razer"?"":"RZ09-9999",hid=enabled?new[]{"1532:FFFF interface=0 usage=0001:0006"}:Array.Empty<string>(),reason},
+                    connection_error=enabled?null:reason,cpu_temp=enabled?(double?)57:null,gpu_temp=enabled?(double?)44:null,actual_rpm=enabled?(int?)3000:null,
+                    modes=new[]{"Balanced","Silent","Custom"},mode="Balanced",fan_auto=true,fan_rpm=3000,
+                    features=enabled?new[]{"perf","fan","kbd-backlight"}:Array.Empty<string>(),pad_connected=false,ac=true
+                }));
+                state=flow.RootElement.Clone();Apply();unsupportedPanel.ExpandReport(false);
+                if(hardwareHost.IsEnabled!=enabled||startup.IsEnabled!=enabled||unsupportedPanel.Visibility!=(scenario=="verified"?Visibility.Collapsed:Visibility.Visible))
+                    throw new InvalidOperationException("Support flow availability failed: "+scenario);
+                shell.RequestedTheme=ElementTheme.Light;ApplyBackground();
+                scroll.ChangeView(null,0,null,true);await Task.Delay(500);
+                CaptureFrame("winui-flow-"+scenario+".png");
+                if(scenario=="unknown-razer") {
+                    unsupportedPanel.ExpandReport(true);await Task.Delay(200);
+                    unsupportedPanel.StartBringIntoView(new BringIntoViewOptions {AnimationDesired=false,VerticalAlignmentRatio=0});
+                    await Task.Delay(200);CaptureFrame("winui-flow-diagnostics.png");
+                }
+            }
+            File.AppendAllText(Path.Combine(AppContext.BaseDirectory,"smoke-checks.txt"),"\nPASS: verified, known experimental, unregistered Razer, non-Razer and missing Blade HID UI flows; diagnostic autofill, missing metadata, preserved user corrections, privacy allowlist and text-file round trip. Synthetic only; save picker not automated.");
             File.AppendAllText(Path.Combine(AppContext.BaseDirectory,"smoke-checks.txt"),"\nPASS: unsupported controls blocked even with ready/pad flags; issue URL validation; AUTO RPM; live color swatch and HEX. Synthetic Cooling Pad and unsupported screenshots captured.");
             state=savedState;Apply();
             await Task.Delay(100);

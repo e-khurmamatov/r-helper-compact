@@ -6,7 +6,7 @@
     "RZ09-9999"
   ],
   "enabled": false,
-  "protocol": "Legacy4",
+  "protocol": "Unverified",
   "keyboard_protocol": "none",
   "verification": "candidate",
   "source": "https://github.com/OWNER/REPOSITORY/issues/NUMBER",

@@ -10,4 +10,5 @@ pub mod capabilities;
 pub mod descriptor;
 pub mod profile;
 pub mod device_registry;
+pub mod diagnostics;
 mod packet;

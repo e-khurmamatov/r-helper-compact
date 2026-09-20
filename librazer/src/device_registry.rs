@@ -36,7 +36,8 @@ pub fn parse(data: &str) -> Result<Vec<Laptop>> {
         for sku in &r.sku_prefixes {
             ensure!(sku.len()==9 && sku.starts_with("RZ09-") && sku[5..].bytes().all(|b|b.is_ascii_digit()),"SKU must be RZ09- plus four digits");
         }
-        ensure!(["Legacy4","Modern6"].contains(&r.protocol.as_str()),"Unimplemented protocol");
+        ensure!(["Legacy4","Modern6"].contains(&r.protocol.as_str()) ||
+            (r.protocol=="Unverified" && !r.enabled && r.verification=="candidate"),"Unimplemented protocol");
         ensure!(["none","standard_matrix_ff"].contains(&r.keyboard_protocol.as_str()),"Unimplemented keyboard protocol");
         ensure!(["user_confirmed","upstream_profile","candidate"].contains(&r.verification.as_str()),"Invalid verification status");
         ensure!(!r.enabled || r.verification!="candidate","Candidates cannot enable writes");
@@ -54,7 +55,15 @@ pub fn lookup(pid:u16) -> Option<&'static Laptop> {
 }
 pub fn select<'a>(records:&'a [Laptop],pids:&[u16],sku:&str)->Result<&'a Laptop> {
     let matches:Vec<_>=records.iter().filter(|r|r.enabled && pids.contains(&r.product_id()) && r.sku_prefixes.iter().any(|prefix|sku.starts_with(prefix))).collect();
-    if matches.len()!=1 { bail!("Unsupported model: no unique SKU and HID PID match in the registry. Controls are disabled."); }
+    if matches.len()>1 { bail!("Multiple registry matches. Controls are disabled."); }
+    if matches.is_empty() {
+        if sku.is_empty() { bail!("Laptop SKU is unavailable. Controls are disabled."); }
+        if pids.is_empty() { bail!("No Razer HID identifiers found. Controls are disabled."); }
+        if records.iter().any(|r| !r.enabled && pids.contains(&r.product_id()) && r.sku_prefixes.iter().any(|prefix|sku.starts_with(prefix))) {
+            bail!("This registry entry is disabled pending verification. Controls are disabled.");
+        }
+        bail!("Unsupported model: no unique SKU and HID PID match in the registry. Controls are disabled.");
+    }
     Ok(matches[0])
 }
 // The callback represents the very first operation that can open/write HID.
@@ -64,14 +73,104 @@ pub fn open_registered<T>(pids:&[u16],sku:&str,open:impl FnOnce(&'static Laptop)
 }
 #[derive(Debug, Clone, Serialize)]
 pub struct SupportReport {
+    pub machine: crate::diagnostics::MachineDetails,
     pub supported: bool,
+    pub experimental: bool,
+    pub identity: String,
+    pub model: String,
     pub sku: String,
     pub hid: Vec<String>,
     pub reason: String,
 }
 
+/// A Razer USB peripheral is not evidence that the host is a Razer laptop.
+pub fn host_identity(manufacturer: &str, sku: &str) -> &'static str {
+    if manufacturer.trim().is_empty() { return "unavailable"; }
+    let maker=manufacturer.trim().to_ascii_lowercase();
+    let razer=matches!(maker.as_str(),"razer"|"razer inc."|"razer inc"|"razer usa, ltd");
+    if !razer { return "non_razer"; }
+    if sku.is_empty() { return "unavailable"; }
+    let chassis=sku.as_bytes();
+    if razer && chassis.len()>=9 && sku.starts_with("RZ09-") && chassis[5..9].iter().all(u8::is_ascii_digit) {
+        "razer"
+    } else { "unavailable" }
+}
+
+pub fn blade_product(product: &str) -> bool {
+    matches!(product.trim(), "Razer Blade"|"Razer Blade 14"|"Razer Blade 15"|"Razer Blade 16"|
+        "Razer Blade 17"|"Razer Blade 18"|"Razer Blade Pro"|"Razer Blade Stealth")
+}
+
+#[derive(Debug)]
+pub struct ControlTarget {
+    pub pid: u16,
+    pub name: String,
+    pub generation: BladeGeneration,
+    pub experimental: bool,
+}
+
+/// Reviewed profiles keep their exact identity mapping. Other Razer hosts may use
+/// generic discovery only when enumeration identifies one Blade controller.
+/// `blade_pids` must come from USB product metadata, never all Razer peripherals.
+pub fn resolve_target(records: &[Laptop], pids: &[u16], blade_pids: &[u16], sku: &str, manufacturer: &str) -> Result<ControlTarget> {
+    match host_identity(manufacturer,sku) {
+        "non_razer"=>bail!("This computer is not identified as a Razer Blade laptop. Controls are disabled."),
+        "unavailable"=>bail!("Laptop manufacturer or SKU is unavailable. Controls are disabled."),
+        _=>{}
+    }
+    let mut candidates: Vec<u16>=blade_pids.iter().copied().filter(|pid|pids.contains(pid)).collect();
+    // An exact reviewed PID/SKU pair can identify controllers with missing product strings.
+    for r in records.iter().filter(|r|r.enabled && pids.contains(&r.product_id()) && r.sku_prefixes.iter().any(|s|sku.starts_with(s))) {
+        candidates.push(r.product_id());
+    }
+    candidates.sort_unstable();candidates.dedup();
+    if candidates.len()>1 { bail!("Multiple Blade HID controllers found. Controls are disabled."); }
+    let pid=*candidates.first().ok_or_else(||anyhow!("Razer laptop detected, but its Blade HID controller could not be identified. Controls are disabled."))?;
+    if let Ok(model)=select(records,&[pid],sku) {
+        return Ok(ControlTarget { pid,name:model.name.clone(),generation:model.generation(),experimental:model.verification!="user_confirmed" });
+    }
+    let name=records.iter().find(|r|r.product_id()==pid && r.sku_prefixes.iter().any(|s|sku.starts_with(s)))
+        .map(|r|r.name.clone()).unwrap_or_else(||"Razer Blade (unregistered model)".into());
+    Ok(ControlTarget { pid,name,generation:BladeGeneration::Discovery,experimental:true })
+}
+
 #[cfg(test)] mod tests {
     use super::*;
+    #[test] fn host_identity_is_not_inferred_from_usb_vendor() {
+        let rows=records().unwrap();
+        for (maker,sku) in [("ASUSTeK COMPUTER INC.","RZ09-0427"),("Dell Inc.",""),("","RZ09-0427"),("Razer",""),("Razer","OTHER-PC")] {
+            assert!(resolve_target(rows,&[0x028c],&[0x028c],sku,maker).is_err());
+        }
+        assert_eq!(host_identity("Dell Inc.",""),"non_razer");
+    }
+    #[test] fn unregistered_razer_uses_discovery_without_foreign_init_commands() {
+        let target=resolve_target(records().unwrap(),&[0xffff,0x0080],&[0xffff,0xffff],"RZ09-9999AB","Razer").unwrap();
+        assert_eq!(target.pid,0xffff);
+        assert!(target.experimental);
+        assert_eq!(target.generation,BladeGeneration::Discovery);
+        assert!(target.generation.default_init_cmds().is_empty());
+        let reused_pid=resolve_target(records().unwrap(),&[0x028c],&[0x028c],"RZ09-9999","Razer").unwrap();
+        assert_eq!(reused_pid.generation,BladeGeneration::Discovery);
+        assert_eq!(reused_pid.name,"Razer Blade (unregistered model)");
+        assert!(resolve_target(records().unwrap(),&[0xffff,0x0080],&[],"RZ09-9999","Razer").is_err());
+        assert!(resolve_target(records().unwrap(),&[0xffff,0xfffe],&[0xffff,0xfffe],"RZ09-9999","Razer").is_err());
+        assert!(blade_product("Razer Blade"));
+        assert!(!blade_product("Razer BlackWidow"));
+        assert!(!blade_product("Razer Cooling Pad"));
+    }
+    #[test] fn known_profiles_and_candidates_have_distinct_evidence() {
+        let rows=records().unwrap();
+        let verified=resolve_target(rows,&[0x028c],&[],"RZ09-0427","Razer").unwrap();
+        assert!(!verified.experimental);
+        let inherited=resolve_target(rows,&[0x029f],&[],"RZ09-0483","Razer").unwrap();
+        assert!(inherited.experimental);
+        for r in rows.iter().filter(|r|r.verification=="candidate") {
+            let target=resolve_target(rows,&[r.product_id()],&[r.product_id()],&r.sku_prefixes[0],"Razer").unwrap();
+            assert!(target.experimental);
+            assert_eq!(target.generation,BladeGeneration::Discovery);
+            assert!(lookup(r.product_id()).is_none());
+        }
+    }
     #[test] fn bundled_registry_is_valid() { assert!(!records().unwrap().is_empty()); }
     #[test] fn unknown_mismatched_disabled_and_missing_devices_never_open() {
         for (pids,sku) in [(vec![0xffff],"RZ09-0528"),(vec![0x028c],"RZ09-9999"),(vec![0x029c],"RZ09-0485"),(vec![],"RZ09-0427"),(vec![0x028c],"OTHER-PC")] {
