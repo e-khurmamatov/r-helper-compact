@@ -1,0 +1,21 @@
+name: Detect documentation-only changes
+on:
+  workflow_call:
+    outputs:
+      run_checks:
+        value: ${{ jobs.scope.outputs.run_checks }}
+permissions:
+  contents: read
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run_checks: ${{ steps.scope.outputs.run_checks }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: scope
+        run: python3 scripts/ci_scope.py
