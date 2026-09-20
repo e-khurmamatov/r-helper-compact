@@ -14,46 +14,6 @@ Control performance modes, fan speeds, keyboard lighting and battery charge limi
 - AC/battery profiles and Cooling Pad controls.
 - Reorderable sections, startup settings and automatic UI language selection.
 
-Support varies by model and firmware. Other Razer laptops may use experimental control after host and Blade controller identification. See [the device registry](devices/README.md) to request or contribute support.
-
-## Laptop compatibility
-
-The app checks the computer manufacturer in BIOS/SMBIOS and a chassis SKU beginning with `RZ09-`. Razer USB VID `1532` alone is insufficient: external mice and keyboards also use it.
-
-| Model | PID | Chassis SKU | Profile and evidence |
-|---|---|---|---|
-| Razer Blade 15 Advanced (2021) | 026D | RZ09-0367, RZ09-0409 | Inherited profile enabled; experimental, no confirmed Compact hardware test |
-| Razer Blade Pro 17 (Early 2021) | 026E | RZ09-0368 | Candidate: generic experimental control; command profile unverified |
-| Razer Blade 15 Base (Early 2021) | 026F | RZ09-0369 | Candidate: generic experimental control; command profile unverified |
-| Razer Blade 14 (2021) | 0270 | RZ09-0370 | Candidate: generic experimental control; command profile unverified |
-| Razer Blade 15 Advanced (Mid 2021) | 0276 | RZ09-0409 | Candidate: generic experimental control; command profile unverified |
-| Razer Blade 17 (2021) | 0279 | RZ09-0406 | Inherited profile enabled; experimental, no confirmed Compact hardware test |
-| Razer Blade 15 (2022) | 028A | RZ09-0421 | Inherited profile enabled; experimental, no confirmed Compact hardware test |
-| Razer Blade 17 (2022) | 028B | RZ09-0423 | Inherited profile enabled; experimental, no confirmed Compact hardware test |
-| Razer Blade 14 (2022) | 028C | RZ09-0427 | User-confirmed hardware |
-| Razer Blade 15 (2023) | 029C | RZ09-0485 | Profile disabled: PID 029C/029E discrepancy |
-| Razer Blade 14 (2023) | 029D | RZ09-0482 | Inherited profile enabled; experimental, no confirmed Compact hardware test |
-| Razer Blade 15 (2023) | 029E | RZ09-0485 | Candidate: generic experimental control; command profile unverified |
-| Razer Blade 16 (2023) | 029F | RZ09-0483 | Inherited profile enabled; experimental, no confirmed Compact hardware test |
-| Razer Blade 18 (2023) | 02A0 | RZ09-0484 | Candidate: generic experimental control; command profile unverified |
-| Razer Blade 14 (2024) | 02B6 | RZ09-0508 | Candidate: generic experimental control; command profile unverified |
-| Razer Blade 16 (2024) | 02B7 | RZ09-0510 | Candidate: generic experimental control; command profile unverified |
-| Razer Blade 18 (2024) | 02B8 | RZ09-0509 | Candidate: generic experimental control; command profile unverified |
-| Razer Blade 14 (2025) | 02C5 | RZ09-0530 | Inherited profile enabled; experimental, no confirmed Compact hardware test |
-| Razer Blade 16 (2025) | 02C6 | RZ09-0528 | Inherited profile enabled; experimental, no confirmed Compact hardware test |
-| Razer Blade 18 (2025) | 02C7 | RZ09-0529 | Candidate: generic experimental control; command profile unverified |
-
-Only Blade 14 (2022) is marked `user_confirmed` in the registry. This does not establish that every feature or firmware revision was tested.
-
-- An exact PID/SKU match to an enabled profile uses that protocol. Unverified models show **Experimental support**.
-- Other Razer laptops, including models absent from the table, can use generic experimental control when USB product metadata identifies one Blade controller. Available features depend on device responses. Operation is not guaranteed; no other model's initialization sequence is applied.
-- Candidate records supply identity references only. `enabled: false` means no authorized model-specific profile; it does not disable the separate generic experimental policy. This also applies to the disabled 029C profile: its model commands are not inherited.
-- A non-Razer host, unavailable system identity, missing Blade controller or ambiguous controllers blocks hardware control. Application settings, diagnostics and explicit Quit remain available.
-
-Blade 16 (2024) is an identity candidate based on external `02B7 / RZ09-0510` evidence. This does not identify the review author's actual laptop or confirm compatibility. Sources and limitations are recorded in [its device record](devices/laptops/02b7.json).
-
-Open **Diagnostics and support → Save diagnostic report…** in the status panel. Review the report, save the text file and attach it to a GitHub issue yourself. Export includes a model recognized in a safe format, chassis SKU, USB VID:PID, interface/usage, app/Windows/BIOS/EC versions and support-check events from the current UI session. Raw logs, serial numbers, device paths, settings and user-entered fields are excluded. Opening GitHub does not include these details even in the URL. Model and BIOS/EC fields are filled automatically when available. Model identification can use the chassis catalogue without a HID connection; a Windows-reported family does not imply an exact year. Missing values are optional and are not guessed. Describe the symptoms and optionally correct the fields; corrections survive refreshes. Review free text before copying a request.
-
 ## Screenshots
 
 <p>
@@ -71,6 +31,37 @@ Download the x64 MSI or portable ZIP from Releases. The MSI installs to Program 
 Settings are stored in `%APPDATA%/r-helper-compact/`. English and Russian are included; the app follows the Windows display language and falls back to English. Override it under **Application → Preferences → Language**, then quit from the tray menu and reopen the app. Builds are currently unsigned.
 
 Open **Application → Check for updates** to check GitHub Releases. Installed copies can download a verified MSI and restart after updating; Windows may request administrator permission. Portable copies download a ZIP to extract manually. Checks are manual; preview builds also receive prereleases. Update downloads and installer logs are stored in `%LOCALAPPDATA%/r-helper-compact/updates/`.
+
+## Laptop compatibility
+
+✅ Confirmed by a user · 🧪 Experimental: not yet confirmed on hardware · ⚠️ Model profile unavailable
+
+Available features depend on the model and firmware. Other Razer Blade models may also work in experimental mode.
+
+| Model | PID | Chassis SKU | Status |
+|---|---|---|---|
+| Razer Blade 15 Advanced (2021) | 026D | RZ09-0367, RZ09-0409 | 🧪 Experimental |
+| Razer Blade Pro 17 (Early 2021) | 026E | RZ09-0368 | 🧪 Experimental |
+| Razer Blade 15 Base (Early 2021) | 026F | RZ09-0369 | 🧪 Experimental |
+| Razer Blade 14 (2021) | 0270 | RZ09-0370 | 🧪 Experimental |
+| Razer Blade 15 Advanced (Mid 2021) | 0276 | RZ09-0409 | 🧪 Experimental |
+| Razer Blade 17 (2021) | 0279 | RZ09-0406 | 🧪 Experimental |
+| Razer Blade 15 (2022) | 028A | RZ09-0421 | 🧪 Experimental |
+| Razer Blade 17 (2022) | 028B | RZ09-0423 | 🧪 Experimental |
+| Razer Blade 14 (2022) | 028C | RZ09-0427 | ✅ Confirmed |
+| Razer Blade 15 (2023) | 029C | RZ09-0485 | ⚠️ Profile unavailable |
+| Razer Blade 14 (2023) | 029D | RZ09-0482 | 🧪 Experimental |
+| Razer Blade 15 (2023) | 029E | RZ09-0485 | 🧪 Experimental |
+| Razer Blade 16 (2023) | 029F | RZ09-0483 | 🧪 Experimental |
+| Razer Blade 18 (2023) | 02A0 | RZ09-0484 | 🧪 Experimental |
+| Razer Blade 14 (2024) | 02B6 | RZ09-0508 | 🧪 Experimental |
+| Razer Blade 16 (2024) | 02B7 | RZ09-0510 | 🧪 Experimental |
+| Razer Blade 18 (2024) | 02B8 | RZ09-0509 | 🧪 Experimental |
+| Razer Blade 14 (2025) | 02C5 | RZ09-0530 | 🧪 Experimental |
+| Razer Blade 16 (2025) | 02C6 | RZ09-0528 | 🧪 Experimental |
+| Razer Blade 18 (2025) | 02C7 | RZ09-0529 | 🧪 Experimental |
+
+If your model is not supported or a feature does not work, you can help add support by sending a diagnostic report. Open **Diagnostics and support → Save diagnostic report…** in the status panel, then attach the saved file to a [GitHub issue](https://github.com/e-khurmamatov/r-helper-compact/issues/new/choose) and describe what does not work. Model and firmware details are filled in automatically when available.
 
 ## Build
 
