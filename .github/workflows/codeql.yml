@@ -64,3 +64,25 @@ jobs:
       - uses: github/codeql-action/analyze@d8073367669608af8fbcc5f63dd0a0d52bb90cff # v4
         with:
           category: '/language:${{ matrix.language }}'
+  result:
+    name: Code analysis
+    needs: [changes, analyze]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require successful analysis or documentation-only skip
+        env:
+          SCOPE_RESULT: ${{ needs.changes.result }}
+          RUN_CHECKS: ${{ needs.changes.outputs.run_checks }}
+          ANALYSIS_RESULT: ${{ needs.analyze.result }}
+        run: |
+          if [[ "$ANALYSIS_RESULT" == "success" ]]; then
+            exit 0
+          fi
+          if [[ "$SCOPE_RESULT" == "success" && "$RUN_CHECKS" == "false" && "$ANALYSIS_RESULT" == "skipped" ]]; then
+            echo "Documentation only: no code analysis required."
+            exit 0
+          fi
+          echo "Code analysis did not complete successfully."
+          exit 1
