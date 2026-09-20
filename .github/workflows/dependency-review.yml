@@ -5,7 +5,11 @@ on:
 permissions:
   contents: read
 jobs:
+  changes:
+    uses: ./.github/workflows/change-scope.yml
   dependency-review:
+    needs: changes
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.run_checks != 'false') }}
     name: Dependency review
     runs-on: ubuntu-latest
     timeout-minutes: 10
