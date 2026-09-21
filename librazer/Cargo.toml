@@ -14,7 +14,7 @@ clap = { version = "4.5.1", features = ["derive"] }
 const-str = "1.1"
 const_format = "0.2.32"
 hidapi = {version = "2.6.1", features = ["windows-native"]}
-rand = "0.8.5"
+rand = "0.10.2"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"
 strum = "0.28.0"
