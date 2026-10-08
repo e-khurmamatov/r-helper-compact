@@ -6,20 +6,55 @@ labels: ""
 assignees: ""
 ---
 
-## Laptop
-Model and RZ09 SKU are filled automatically when identifiable. You do not need to guess the model year. Optional correction (no serial number):
-
-## System
-App, Windows and BIOS/EC versions are included automatically when available. Leave unavailable values unknown; optional corrections:
-
 ## Diagnostics
-Use **Save diagnostic report…** under Diagnostics and support. Review the text file and attach it here yourself. It includes model, chassis SKU, USB VID:PID, interface/usage, app/Windows/BIOS/EC versions when available and a bounded support-check log. Additional model details are optional.
+In Compact, expand **Diagnostics and support** and choose **Save diagnostic report…**. Review the text file, then drag it into this issue before submitting.
 
-Do not attach raw controller logs, serial numbers, device paths, personal information or secrets. No report is uploaded automatically.
+Alternatively, use **Copy request** and paste it here. Opening the GitHub issue does not attach the report or paste the request. The saved file does not include your Comment or corrections entered in the app, so add those below.
 
-Describe the exact symptoms and any displayed restriction reason:
+If the panel or export is unavailable, say so and fill in what you know. Leave unknown values unknown.
 
-## Known support
-Which features work in official software? Include links to any protocol evidence.
+Do not attach raw controller logs, serial numbers, device paths, personal information or secrets. Nothing is uploaded automatically.
 
-Do not substitute another model's PID/SKU or treat experimental support as hardware verification.
+## Laptop and system
+The report already includes model, chassis SKU, USB identifiers and app/Windows/BIOS/EC versions when available. No need to repeat them or guess the model year.
+
+- Corrections or details missing from the report:
+- MSI or portable:
+- If relevant, is this the factory configuration, or were the motherboard, display or chassis replaced?
+
+Keep the reported PID/SKU unchanged, even if they seem inconsistent.
+
+## What does not work?
+Please describe at least one specific problem.
+
+- Control or feature (for lighting, keyboard effects, brightness or lid logo):
+- What you tried, including the selected mode or CPU/GPU levels:
+- What you expected:
+- What happened instead:
+- Exact error or restriction message, if any:
+- Is the control disabled, is an option missing, or does the selection fail/revert?
+- Plugged in or on battery:
+- Was Synapse or OpenRGB running? For lighting, which owner is selected in Compact?
+
+A screenshot of the affected section can help. Remove private information first.
+
+## What already works?
+For each feature you have tried, say works / fails / not tried:
+- Performance modes and CPU/GPU levels:
+- Fans:
+- Charge limit:
+- Keyboard brightness and effects:
+- Lid logo:
+
+Which equivalent modes or settings work in Synapse? Include their names and levels.
+
+## Comparisons (only for power or temperature problems)
+- Comparison tool and exact sensor names (e.g. CPU Package, GPU core or hotspot):
+- A few paired readings from Compact and the comparison tool:
+- Workload and AC/battery state during the comparison:
+- For GPU power, is the value measured draw or a reported power limit?
+
+## Other details
+Any relevant protocol evidence or links:
+
+An experimental label or "Connection: ready" does not confirm that every feature works. The report helps investigate support; it does not automatically enable or verify a model.
