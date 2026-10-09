@@ -7,7 +7,8 @@ pub const SUSTAINED_HIGH_POLLS: u32 = 3;
 /// Raw readings in a sustained-high streak must agree within this range (°C).
 pub const SPIKE_STABILITY_C: f32 = 5.0;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum CpuTempSource {
     #[default]
     Lhm,
@@ -19,6 +20,7 @@ pub enum CpuTempSource {
 pub struct ThermalRawSnapshot {
     pub snapshot: ThermalSnapshot,
     pub cpu_source: Option<CpuTempSource>,
+    pub gpu_source: Option<&'static str>,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -140,6 +142,7 @@ pub fn filter_thermal_snapshot_spike(
         ThermalRawSnapshot {
             snapshot: new,
             cpu_source: None,
+            gpu_source: None,
         },
         state,
         &mut None,
@@ -239,7 +242,12 @@ impl ThermalReader {
             (None, None)
         };
 
-        let gpu_avg_c = lhm_gpu.or_else(|| self.read_nvml_gpu_temp());
+        let (gpu_avg_c, gpu_source) = if let Some(gpu) = lhm_gpu {
+            (Some(gpu), Some("lhm"))
+        } else {
+            let gpu = self.read_nvml_gpu_temp();
+            (gpu, gpu.map(|_| "nvml"))
+        };
 
         ThermalRawSnapshot {
             snapshot: ThermalSnapshot {
@@ -247,6 +255,7 @@ impl ThermalReader {
                 gpu_avg_c,
             },
             cpu_source,
+            gpu_source,
         }
     }
 
@@ -598,6 +607,7 @@ mod filter_tests {
                 gpu_avg_c: None,
             },
             cpu_source: Some(CpuTempSource::PerfCounter),
+            gpu_source: None,
         };
         let filtered = filter_thermal_raw_snapshot(&prev, raw, &mut state, &mut last_source);
         assert_eq!(filtered.cpu_avg_c, Some(68.0));

@@ -47,6 +47,9 @@ internal sealed class Controller : IDisposable
         process.Dispose();
         Start();
     }
+    internal sealed class CommandException(string message,JsonElement state) : IOException(message) {
+        public JsonElement State { get; }=state;
+    }
     public async Task<JsonElement> Send(string action, object? value = null)
     {
         await gate.WaitAsync();
@@ -66,7 +69,7 @@ internal sealed class Controller : IDisposable
                     var root=doc.RootElement;
                     if (!root.TryGetProperty("id",out var reply) || reply.GetInt64()!=id) continue;
                     if (root.TryGetProperty("error",out var error) && error.ValueKind==JsonValueKind.String)
-                    { Log($"{action}: {error.GetString()}");throw new IOException(error.GetString()); }
+                    { Log($"{action}: {error.GetString()}");throw new CommandException(error.GetString()??"",root.TryGetProperty("state",out var failedState)?failedState.Clone():default); }
                     return root.GetProperty("state").Clone();
                 }
             }

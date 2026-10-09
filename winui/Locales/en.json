@@ -235,5 +235,13 @@
   "Write result": "Write result",
   "After write": "After write",
   "Unavailable": "Unavailable",
-  "Legacy4 and Modern6 share control commands and differ in available modes. Matrix protocols test keyboard commands. No model initialization sequence is sent. Set Custom before boost tests and Manual before RPM tests. Close Synapse and disable Windows Dynamic Lighting when testing lighting; external lighting ownership still blocks writes.": "Legacy4 and Modern6 share control commands and differ in available modes. Matrix protocols test keyboard commands. No model initialization sequence is sent. Set Custom before boost tests and Manual before RPM tests. Close Synapse and disable Windows Dynamic Lighting when testing lighting; external lighting ownership still blocks writes."
+  "Legacy4 and Modern6 share control commands and differ in available modes. Matrix protocols test keyboard commands. No model initialization sequence is sent. Set Custom before boost tests and Manual before RPM tests. Close Synapse and disable Windows Dynamic Lighting when testing lighting; external lighting ownership still blocks writes.": "Legacy4 and Modern6 share control commands and differ in available modes. Matrix protocols test keyboard commands. No model initialization sequence is sent. Set Custom before boost tests and Manual before RPM tests. Close Synapse and disable Windows Dynamic Lighting when testing lighting; external lighting ownership still blocks writes.",
+  "Include my reviewed description and corrections": "Include my reviewed description and corrections",
+  "What did you try, and what happened?": "What did you try, and what happened?",
+  "What works in Compact and Synapse?": "What works in Compact and Synapse?",
+  "Optional comparison: tool, sensors, workload, measured draw or power limit, Synapse running": "Optional comparison: tool, sensors, workload, measured draw or power limit, Synapse running",
+  "Optional component replacement history": "Optional component replacement history",
+  "Optional comparison and component history": "Optional comparison and component history",
+  "The automatic report includes identity, capabilities, settings, command outcomes and temperature sources. Raw logs, serial numbers and device paths are excluded. Description and corrections are included only when you select the option above. Review before sharing.": "The automatic report includes identity, capabilities, settings, command outcomes and temperature sources. Raw logs, serial numbers and device paths are excluded. Description and corrections are included only when you select the option above. Review before sharing.",
+  "Paste the copied request or attach the saved report in GitHub. Nothing is submitted automatically.": "Paste the copied request or attach the saved report in GitHub. Nothing is submitted automatically."
 }

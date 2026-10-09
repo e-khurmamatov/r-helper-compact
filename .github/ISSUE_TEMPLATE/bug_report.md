@@ -25,7 +25,7 @@ What did you expect, and what happened instead? Is the control disabled, is an o
 ## Diagnostics
 Paste the exact error message or add a screenshot of the affected section, with private information removed.
 
-If **Diagnostics and support** is available in Compact, use **Save diagnostic report…**, review the file and attach it here. You can also use **Copy request** and paste it. Opening a GitHub issue does not attach or paste anything automatically. The saved report excludes your Comment and corrections, so include those in this issue.
+If **Diagnostics and support** is available in Compact, use **Save diagnostic report…**, review the file and attach it here. You can also use **Copy request** and paste it. Opening a GitHub issue does not attach or paste anything automatically. Copy and save contain the same automatic evidence. Select **Include my reviewed description and corrections** to include your reviewed fields; otherwise their omission is explicit.
 
 If diagnostics are unavailable, say so. Do not attach raw controller logs, serial numbers, device paths or secrets.
 

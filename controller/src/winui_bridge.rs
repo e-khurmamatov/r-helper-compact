@@ -24,6 +24,17 @@ fn enumeration<T: for<'a> Deserialize<'a>>(v: &Value) -> Result<T, String> {
 fn names<T: Serialize>(v: T) -> Value {
     serde_json::to_value(v).unwrap_or(Value::Null)
 }
+// Registry evidence only; this function never authorizes or opens a device.
+fn support_context(pid: Option<u16>, sku: &str) -> Value {
+    let record = pid.and_then(|pid| librazer::device_registry::records().ok()?.iter().find(|r| r.product_id() == pid));
+    let exact = record.is_some_and(|r| r.sku_prefixes.iter().any(|s| sku.starts_with(s)));
+    json!({"selected_pid":pid.map(|pid|format!("1532:{pid:04X}")),
+        "registry_match":if pid.is_none() {"unavailable"} else if exact {"exact_pid_sku"} else if record.is_some() {"pid_sku_mismatch"} else {"unregistered_pid"},
+        "verification":record.map(|r|r.verification.as_str()),
+        "registry_enabled":record.map(|r|r.enabled),
+        "protocol":if exact && record.is_some_and(|r|r.enabled) {record.map(|r|r.protocol.as_str())} else {pid.map(|_|"Discovery")},
+        "keyboard_protocol":if exact && record.is_some_and(|r|r.enabled) {record.map(|r|r.keyboard_protocol.as_str())} else {None}})
+}
 impl Controller {
     fn native_connection_error(&self) -> Option<String> {
         if !self.device_support.supported {
@@ -122,6 +133,11 @@ impl Controller {
             "unsupported"
         });
         state["support_report"] = names(&self.device_support);
+        state["support_context"] = support_context(descriptor.as_ref().map(|(pid, _)| *pid), &self.device_support.sku);
+        state["session_locked"] = json!(self.session_state.locked.load(Ordering::Relaxed));
+        if let Ok(evidence) = self.thermal_evidence.lock() {
+            state["thermal_evidence"] = evidence.report(now);
+        }
         state["diagnostic"] = self.diagnostic.summary();
         state["diagnostic_available"] = json!(self.device_support.supported && self.device.is_some()
             && self.fully_initialized && !self.loading && !self.session_state.locked.load(Ordering::Relaxed));
@@ -459,19 +475,11 @@ pub fn run() {
             Ok(line) => {
                 let response = match serde_json::from_str::<Request>(&line) {
                     Ok(r) => {
-                        let before = app
-                            .message_manager
-                            .get_current_message()
-                            .map(|m| m.timestamp);
+                        let before = app.message_manager.last_error().map(|m| m.timestamp);
                         let mut error = app.native_action(&r).err();
                         if error.is_none() {
-                            if let Some(m) = app.message_manager.get_current_message() {
-                                if Some(m.timestamp) != before
-                                    && (m.message_type == messaging::MessageType::Error
-                                        || m.content.starts_with("Failed"))
-                                {
-                                    error = Some(m.content.clone());
-                                }
+                            if let Some(m) = app.message_manager.last_error() {
+                                if Some(m.timestamp) != before { error = Some(m.content.clone()); }
                             }
                         }
                         app.update_polling_policy();
@@ -500,6 +508,16 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn report_context_flags_mismatched_pid_sku_without_inheriting_a_profile() {
+        let report = support_context(Some(0x02b7), "RZ09-0483");
+        assert_eq!(report["selected_pid"], "1532:02B7");
+        assert_eq!(report["registry_match"], "pid_sku_mismatch");
+        assert_eq!(report["protocol"], "Discovery");
+        assert_eq!(support_context(Some(0x028c), "RZ09-0427")["protocol"], "Legacy4");
+        assert!(support_context(None, "RZ09-0483")["selected_pid"].is_null());
+    }
+
     #[test]
     fn protocol_rejects_malformed_and_extra_fields() {
         assert!(

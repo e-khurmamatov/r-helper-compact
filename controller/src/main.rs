@@ -178,6 +178,7 @@ struct Controller {
     laptop_fan_cap: Arc<Mutex<LaptopFanCapShared>>,
     laptop_fan_cap_enforcer_started: bool,
     shared_thermal: Arc<Mutex<ThermalSnapshot>>,
+    thermal_evidence: Arc<Mutex<thermal_poll::ThermalEvidence>>,
     last_cooling_pad_sync_time: std::time::Instant,
     session_device_slot: DeviceSlot,
     session_state: Arc<SessionState>,
@@ -477,6 +478,7 @@ impl Controller {
             laptop_fan_cap: Arc::new(Mutex::new(LaptopFanCapShared::default())),
             laptop_fan_cap_enforcer_started: false,
             shared_thermal,
+            thermal_evidence: Arc::new(Mutex::new(thermal_poll::ThermalEvidence::default())),
             last_cooling_pad_sync_time: now,
             session_device_slot,
             session_state,
@@ -546,6 +548,7 @@ impl Controller {
             Arc::clone(&self.polling),
             Arc::clone(&self.shared_thermal),
             Arc::clone(&self.temperature_history),
+            Arc::clone(&self.thermal_evidence),
         );
     }
 

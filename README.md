@@ -71,6 +71,8 @@ Laptop profile switching and software fan enforcement pause during the session; 
 
 The separate session log records values before/after each experiment, write acknowledgement or failure, timestamped HID packets including rejected responses, and explicit unavailable readings. Effects have no implemented readback; describe the visible result under **Observed behavior**. A successful response does not confirm hardware compatibility. Up to 64 experiments are retained, with explicit truncation counters. Save the log before starting another session or quitting. **Save session log…** exports a reviewable text file; **Open GitHub issue** opens a new issue or the optional existing issue number. Attach the file manually. No report is uploaded automatically, and stderr, device paths, serial-number requests and personal settings are not collected by this recorder.
 
+Support reports are available under **Diagnostics and support** for every device status. They include controller/registry evidence, availability reasons, a bounded command journal and raw/filtered temperature sources with sample age. Copy and save use the same request. Select **Include my reviewed description and corrections** only after reviewing your text; otherwise personal fields are omitted. Paste the request or attach the saved file yourself. No hardware probe or automatic upload is performed by export.
+
 ## Build
 
 Requires Windows x64, PowerShell 7, Python 3.11+, Visual Studio C++ Build Tools with the Windows SDK, Rust 1.98.1 (MSVC) and .NET SDK 10.0.401.

@@ -7,9 +7,9 @@ assignees: ""
 ---
 
 ## Diagnostics
-In Compact, expand **Diagnostics and support** and choose **Save diagnostic report…**. Review the text file, then drag it into this issue before submitting.
+In Compact, expand **Diagnostics and support** (available for verified models too) and choose **Save diagnostic report…**. Review the text file, then drag it into this issue before submitting.
 
-Alternatively, use **Copy request** and paste it here. Opening the GitHub issue does not attach the report or paste the request. The saved file does not include your Comment or corrections entered in the app, so add those below.
+Alternatively, use **Copy request** and paste it here. Opening the GitHub issue does not attach the report or paste the request. Copy and save include the same automatic evidence. Select **Include my reviewed description and corrections** to include your reviewed fields; otherwise their omission is explicit.
 
 If the panel or export is unavailable, say so and fill in what you know. Leave unknown values unknown.
 
