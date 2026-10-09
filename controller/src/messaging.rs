@@ -70,6 +70,7 @@ impl UserMessage {
 /// Manages user messages with display logic
 pub struct MessageManager {
     current_message: Option<UserMessage>,
+    last_error: Option<UserMessage>,
     message_queue: Vec<UserMessage>,
 }
 
@@ -78,12 +79,17 @@ impl MessageManager {
     pub fn new() -> Self {
         Self {
             current_message: None,
+            last_error: None,
             message_queue: Vec::new(),
         }
     }
 
     /// Add a new message, overriding current message instantly
     pub fn add_message(&mut self, message: UserMessage) {
+        // A later status message must not hide a command failure from its caller.
+        if message.message_type == MessageType::Error || message.content.starts_with("Failed") {
+            self.last_error = Some(message.clone());
+        }
         // New messages always override current messages for instant display
         // Save current message to queue only if it hasn't started fading yet
         if let Some(current) = &self.current_message {
@@ -96,6 +102,8 @@ impl MessageManager {
         self.current_message = Some(message);
         self.cleanup_queue();
     }
+
+    pub fn last_error(&self) -> Option<&UserMessage> { self.last_error.as_ref() }
 
     /// Get the current message that should be displayed
     pub fn get_current_message(&self) -> Option<&UserMessage> {
@@ -166,4 +174,19 @@ pub fn error_message(content: impl Into<String>) -> UserMessage {
         MessageType::Error,
         MessagePriority::Critical,
     )
+}
+
+#[cfg(test)]
+mod command_error_tests {
+    use super::*;
+    #[test]
+    fn command_failure_survives_a_subsequent_status_message() {
+        let mut manager = MessageManager::new();
+        manager.add_message(error_message("Failed to restore fan RPM"));
+        let before = manager.last_error().unwrap().timestamp;
+        manager.add_message(status_message("Mode changed"));
+        assert_eq!(manager.last_error().unwrap().content, "Failed to restore fan RPM");
+        assert_eq!(manager.last_error().unwrap().timestamp, before);
+        assert_eq!(manager.get_current_message().unwrap().content, "Mode changed");
+    }
 }

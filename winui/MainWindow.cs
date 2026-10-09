@@ -410,6 +410,7 @@ internal sealed class MainWindow : Window
         busy=true; if(action!="snapshot" && action!="visibility" && stillCurrent is null) { hardwareHost.IsEnabled=false;padHost.IsEnabled=false;lightingHost.IsEnabled=false;lightingOwner.IsEnabled=false;startup.IsEnabled=false; }
         try {
             state=await controller.Send(action,value);
+            unsupportedPanel.RecordCommand(action,value,state);
             if(action=="reconnect")state=await controller.Send("visibility",AppWindow.IsVisible);
             lastReplyTicks=Stopwatch.GetTimestamp();readingsConnected=true;
             if(action=="fan_rpm" && (stillCurrent is null || stillCurrent()))dirtySliders.Remove(rpm);
@@ -420,7 +421,7 @@ internal sealed class MainWindow : Window
             if(action=="pad_effect")padEffectDirty=false;
             Apply();
         }
-        catch(Exception e) { readingsConnected=false; readingAge.Text=L.T("Readings unavailable");telemetry.Text="CPU — °C    GPU — °C\nFAN — RPM"; ShowError(e.Message,action!="snapshot" && action!="visibility" && stillCurrent is null); CancelSliderEdits();hardwareHost.IsEnabled=false;lightingHost.IsEnabled=false;lightingOwner.IsEnabled=false; }
+        catch(Exception e) { if(e is Controller.CommandException failure&&failure.State.ValueKind==JsonValueKind.Object) {state=failure.State;Apply();}unsupportedPanel.RecordCommand(action,value,state,e.Message);unsupportedPanel.UpdateState(default,e is Controller.CommandException);readingsConnected=false; readingAge.Text=L.T("Readings unavailable");telemetry.Text="CPU — °C    GPU — °C\nFAN — RPM"; ShowError(e.Message,action!="snapshot" && action!="visibility" && stillCurrent is null); CancelSliderEdits();hardwareHost.IsEnabled=false;lightingHost.IsEnabled=false;lightingOwner.IsEnabled=false; }
         finally { busy=false;startup.IsEnabled=Supported&&!diagnosticPanel.Active;requestGate.Release(); }
     }
     async Task SendDiagnostic(string action,object? value) { CancelSliderEdits();await Send(action,value);diagnosticPanel.Update(state); }
@@ -442,13 +443,13 @@ internal sealed class MainWindow : Window
             diagnosticPanel.Update(state);
             bool diagnostic=diagnosticPanel.Active;
             bool unsupported=S("support_status")=="unsupported";
-            bool showSupport=unsupported||S("support_status")=="experimental";
             organizer.IsEnabled=Supported;
             padStatus.Text=B("pad_connected")?L.T("Connected"):L.T("Not connected");
-            unsupportedPanel.Visibility=showSupport?Visibility.Visible:Visibility.Collapsed;
+            unsupportedPanel.Visibility=Visibility.Visible;
             startup.IsEnabled=Supported&&!diagnostic;
             reconnect.IsEnabled=!diagnostic;
-            if(showSupport && state.TryGetProperty("support_report",out var report))unsupportedPanel.Update(report,S("model"),B("ready"),S("connection_error")!="—");
+            if(state.TryGetProperty("support_report",out var report))unsupportedPanel.Update(report,S("model"),B("ready"),S("connection_error")!="—");
+            unsupportedPanel.UpdateState(state,readingsConnected);
             model.Text=L.T(S("model"));
             if(S("model")=="Razer Blade (unregistered model)"&&state.TryGetProperty("support_report",out var identityReport)&&identityReport.TryGetProperty("sku",out var chassis)&&chassis.ValueKind==JsonValueKind.String)
                 model.Text+=" · "+DeviceIssuePanel.SafeSku(chassis.GetString()??"");
@@ -553,6 +554,7 @@ internal sealed class MainWindow : Window
     async Task CaptureSmoke()
     {
         try {
+            DeviceIssuePanel.EvidenceSmokeTest();
             await DiagnosticPanel.SmokeTest();
             await SliderCommandSmoke.Run();
             TemperatureChart.SmokeTest();
@@ -647,7 +649,7 @@ internal sealed class MainWindow : Window
                     features=enabled?new[]{"perf","fan","kbd-backlight"}:Array.Empty<string>(),pad_connected=false,ac=true
                 }));
                 state=flow.RootElement.Clone();Apply();unsupportedPanel.ExpandReport(false);
-                if(hardwareHost.IsEnabled!=enabled||startup.IsEnabled!=enabled||unsupportedPanel.Visibility!=(scenario=="verified"?Visibility.Collapsed:Visibility.Visible))
+                if(hardwareHost.IsEnabled!=enabled||startup.IsEnabled!=enabled||unsupportedPanel.Visibility!=Visibility.Visible)
                     throw new InvalidOperationException("Support flow availability failed: "+scenario);
                 shell.RequestedTheme=ElementTheme.Light;ApplyBackground();
                 scroll.ChangeView(null,0,null,true);await Task.Delay(500);
