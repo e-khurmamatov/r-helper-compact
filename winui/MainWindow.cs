@@ -23,6 +23,7 @@ internal sealed class MainWindow : Window
     readonly DeviceIssuePanel unsupportedPanel=new() { Visibility=Visibility.Collapsed };
     readonly ContentControl applicationHost=new() { HorizontalContentAlignment=HorizontalAlignment.Stretch };
     readonly UpdatePanel updates;
+    readonly DiagnosticPanel diagnosticPanel;
     bool Supported=>S("support_status") is "supported" or "experimental";
     readonly ScrollViewer scroll=new() { HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=ScrollBarVisibility.Auto };
     readonly Forms.NativeWindow trayOwner=new();
@@ -97,6 +98,7 @@ internal sealed class MainWindow : Window
         Title="R-Helper Compact";
         hwnd=WinRT.Interop.WindowNative.GetWindowHandle(this);
         unsupportedPanel.WindowHandle=hwnd;
+        diagnosticPanel=new DiagnosticPanel(SendDiagnostic) { WindowHandle=hwnd };
         appIcon=System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? (System.Drawing.Icon)System.Drawing.SystemIcons.Application.Clone();
         SendMessage(hwnd,0x80,0,appIcon.Handle);SendMessage(hwnd,0x80,1,appIcon.Handle);
         var presenter=(OverlappedPresenter)AppWindow.Presenter;
@@ -223,7 +225,7 @@ internal sealed class MainWindow : Window
             catch(Exception e) when(e is IOException or UnauthorizedAccessException) { language.SelectedIndex=savedLanguage;ShowError(e.Message); }
         };
         applicationHost.Content=Card(L.T("Application"),updates,Fold(L.T("Preferences"),startup,theme,language,languageHint));organizer.Add("app",L.T("Application"),applicationHost);
-        organizer.Add("about",L.T("About device"),new Expander { Header=L.T("About device"),Content=info,HorizontalAlignment=HorizontalAlignment.Stretch });
+        organizer.Add("about",L.T("About device"),new Expander { Header=L.T("About device"),Content=Stack(info,diagnosticPanel),HorizontalAlignment=HorizontalAlignment.Stretch });
         organizer.Initialize(new[]{"performance","cooling","battery","profiles","lighting","pad","app","about"});
         content.Children.Add(status);
         content.Children.Add(ActionButton(L.T("Quit application"),()=> { Quit(); return Task.CompletedTask; }));
@@ -280,6 +282,7 @@ internal sealed class MainWindow : Window
     }
     void CheckSmokeState() {
         DeviceIssuePanel.SmokeTest();
+        DiagnosticPanel.SmokeTest();
         // Synthetic values only in the explicit controller-free smoke test.
         using var sample=JsonDocument.Parse("""{"support_status":"supported","logo":"Off","model":"UI test · synthetic data","cpu_temp":59.050018310546875,"gpu_temp":49.0,"actual_rpm":3200,"fan_rpm":4000,"fan_auto":false,"mode":"Balanced","modes":["Balanced"],"brightness":89,"ready":false,"pad_connected":false}""");
         state=sample.RootElement.Clone();Apply();
@@ -417,8 +420,9 @@ internal sealed class MainWindow : Window
             Apply();
         }
         catch(Exception e) { readingsConnected=false; readingAge.Text=L.T("Readings unavailable");telemetry.Text="CPU — °C    GPU — °C\nFAN — RPM"; ShowError(e.Message,action!="snapshot" && action!="visibility" && stillCurrent is null); CancelSliderEdits();hardwareHost.IsEnabled=false;lightingHost.IsEnabled=false;lightingOwner.IsEnabled=false; }
-        finally { busy=false;startup.IsEnabled=Supported;requestGate.Release(); }
+        finally { busy=false;startup.IsEnabled=Supported&&!diagnosticPanel.Active;requestGate.Release(); }
     }
+    async Task SendDiagnostic(string action,object? value) { CancelSliderEdits();await Send(action,value);diagnosticPanel.Update(state); }
     void ShowError(string message,bool bringToFront=true) { errors.Message=L.T(message);errors.IsOpen=true;if(bringToFront && !smoke && Content is not null)ShowPopup(); }
     string Temperature(string name)=>readingsConnected&&!Stale("thermal_age_ms")&&state.TryGetProperty(name,out var v)&&v.ValueKind==JsonValueKind.Number&&v.TryGetDouble(out var n)&&double.IsFinite(n)?n.ToString("F2",System.Globalization.CultureInfo.CurrentCulture):"—";
     string S(string name)=>state.TryGetProperty(name,out var v)&&v.ValueKind!=JsonValueKind.Null?v.ToString():"—";
@@ -434,12 +438,15 @@ internal sealed class MainWindow : Window
     {
         syncing=true;
         try {
+            diagnosticPanel.Update(state);
+            bool diagnostic=diagnosticPanel.Active;
             bool unsupported=S("support_status")=="unsupported";
             bool showSupport=unsupported||S("support_status")=="experimental";
             organizer.IsEnabled=Supported;
             padStatus.Text=B("pad_connected")?L.T("Connected"):L.T("Not connected");
             unsupportedPanel.Visibility=showSupport?Visibility.Visible:Visibility.Collapsed;
-            startup.IsEnabled=Supported;
+            startup.IsEnabled=Supported&&!diagnostic;
+            reconnect.IsEnabled=!diagnostic;
             if(showSupport && state.TryGetProperty("support_report",out var report))unsupportedPanel.Update(report,S("model"),B("ready"),S("connection_error")!="—");
             model.Text=L.T(S("model"));
             if(S("model")=="Razer Blade (unregistered model)"&&state.TryGetProperty("support_report",out var identityReport)&&identityReport.TryGetProperty("sku",out var chassis)&&chassis.ValueKind==JsonValueKind.String)
@@ -466,10 +473,10 @@ internal sealed class MainWindow : Window
             lastConnectionError=L.T(S("connection_error"));
             reconnect.Visibility=B("ready")?Visibility.Collapsed:Visibility.Visible;
             if(!B("ready")) { rpmCommand.Cancel();brightnessCommand.Cancel(); }
-            hardwareHost.IsEnabled=Supported&&B("ready");padHost.IsEnabled=Supported&&B("pad_connected");
-            lightingOwner.IsEnabled=Supported;
+            hardwareHost.IsEnabled=Supported&&B("ready")&&!diagnostic;padHost.IsEnabled=Supported&&B("pad_connected");
+            lightingOwner.IsEnabled=Supported&&!diagnostic;
             lightingOwner.SelectedIndex=B("lighting_external")?1:0;
-            lightingHost.IsEnabled=Supported&&B("ready")&&!B("lighting_external");
+            lightingHost.IsEnabled=Supported&&B("ready")&&!B("lighting_external")&&!diagnostic;
             lightingHost.Visibility=B("lighting_external")?Visibility.Collapsed:Visibility.Visible;
             keyboardEffect.IsEnabled=keyboardColor.IsEnabled=keyboardColor2.IsEnabled=reactiveDuration.IsEnabled=waveDirection.IsEnabled=applyEffect.IsEnabled=B("keyboard_effect_supported");
             lightingHint.Text=B("lighting_external")?L.T("Configure effects in OpenRGB. R-Helper Compact leaves laptop lighting unchanged, including in profiles."):B("keyboard_effect_supported")?L.T("Apply effects with the button. Brightness applies automatically. Close OpenRGB before using these controls."):L.T("Direct effects are currently available for Blade 14 (2022). Brightness and logo support depend on the device.");
@@ -499,12 +506,12 @@ internal sealed class MainWindow : Window
         menu.Items.Add(L.T("Open"),null,(_,_)=>DispatcherQueue.TryEnqueue(ShowPopup));
         var modes=new Forms.ToolStripMenuItem(L.T("Performance"));
         foreach(var mode in state.ValueKind==JsonValueKind.Object?A("modes"):Array.Empty<string>()) { var item=new Forms.ToolStripMenuItem(ChoiceLabel(mode)){Checked=S("mode")==mode};item.Click+=async(_,_)=>await Send("performance",mode);modes.DropDownItems.Add(item); }
-        modes.Enabled=state.ValueKind==JsonValueKind.Object&&Supported&&B("ready");menu.Items.Add(modes);
+        modes.Enabled=state.ValueKind==JsonValueKind.Object&&Supported&&B("ready")&&!diagnosticPanel.Active;menu.Items.Add(modes);
         var cooling=new Forms.ToolStripMenuItem(L.T("Cooling")) { Enabled=modes.Enabled };
         cooling.DropDownItems.Add(L.T("Auto"),null,async(_,_)=>await Send("fan_auto"));
         foreach(var speed in new[]{3000,4000,5000,5500})cooling.DropDownItems.Add($"{speed} RPM",null,async(_,_)=>await Send("fan_rpm",speed));
         menu.Items.Add(cooling);
-        var run=new Forms.ToolStripMenuItem(L.T("Run at Windows sign-in")) { Checked=state.ValueKind==JsonValueKind.Object&&B("startup"),Enabled=controller is not null&&Supported };
+        var run=new Forms.ToolStripMenuItem(L.T("Run at Windows sign-in")) { Checked=state.ValueKind==JsonValueKind.Object&&B("startup"),Enabled=controller is not null&&Supported&&!diagnosticPanel.Active };
         run.Click+=async(_,_)=>await Send("startup",!run.Checked);menu.Items.Add(run);
         menu.Items.Add(new Forms.ToolStripSeparator());menu.Items.Add(L.T("Quit"),null,(_,_)=>Quit());
     }

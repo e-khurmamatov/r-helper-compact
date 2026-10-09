@@ -122,6 +122,9 @@ impl Controller {
             "unsupported"
         });
         state["support_report"] = names(&self.device_support);
+        state["diagnostic"] = self.diagnostic.summary();
+        state["diagnostic_available"] = json!(self.device_support.supported && self.device.is_some()
+            && self.fully_initialized && !self.loading && !self.session_state.locked.load(Ordering::Relaxed));
         state["connection_error"] = names(connection_error);
         state["hid_pid"] = names(
             descriptor
@@ -149,6 +152,50 @@ impl Controller {
         }
         if request.action == "snapshot" {
             return Ok(());
+        }
+        if request.action == "diagnostic_mode" {
+            let enabled = v.as_bool().ok_or("Expected boolean")?;
+            if !enabled {
+                self.diagnostic.stop();
+                self.sync_laptop_fan_cap();
+                self.polling.refresh();
+                return Ok(());
+            }
+            if self.diagnostic.active { return Ok(()); }
+            if !self.device_support.supported || !self.fully_initialized || self.loading {
+                return Err("Diagnostic device unavailable".into());
+            }
+            let metadata = self.device.as_ref().and_then(|d| d.with(|d| {
+                if self.session_state.locked.load(Ordering::Relaxed) { return Err("Windows session is locked".to_string()); }
+                d.validate_current_identity().map_err(|_| "Diagnostic identity check failed".to_string())?;
+                Ok(json!({"application":env!("CARGO_PKG_VERSION"),"pid":format!("1532:{:04X}",d.info().pid),
+                    "sku":d.info().model_sku,"interface":d.control_interface(),"on_ac":self.ac_power,"lighting_external":self.lighting_external,"machine":self.device_support.machine,"hid":self.device_support.hid.iter().take(64).collect::<Vec<_>>() }))
+            })).ok_or("Diagnostic device unavailable")??;
+            self.diagnostic.start(metadata);
+            // Synchronize with the dedicated enforcer before the first experiment.
+            self.sync_laptop_fan_cap();
+            return Ok(());
+        }
+        if request.action == "diagnostic_export" { return Ok(()); }
+        if request.action == "diagnostic_test" {
+            if !self.diagnostic.active { return Err("Diagnostic mode is off".into()); }
+            let experiment: librazer::diagnostic::Experiment = enumeration(v)?;
+            experiment.validate().map_err(|e| e.to_string())?;
+            let result = self.device.as_ref().and_then(|d| d.with(|d| {
+                // Recheck after acquiring the mutex; queued work cannot bypass ownership, lock or identity.
+                if self.session_state.locked.load(Ordering::Relaxed) { return Err("windows_session_locked"); }
+                if experiment.operation.lighting() && self.lighting_external { return Err("external_lighting_owner"); }
+                if !self.device_support.supported || !self.diagnostic.matches_identity(d.info().pid, &d.info().model_sku)
+                    || d.validate_current_identity().is_err() { return Err("identity_check_failed"); }
+                librazer::diagnostic::execute(d, experiment.clone()).map_err(|_|"diagnostic_operation_unavailable")
+            })).unwrap_or(Err("diagnostic_device_unavailable"));
+            let record = result.unwrap_or_else(|reason|librazer::diagnostic::blocked(experiment,reason));
+            self.diagnostic.push(record);
+            self.polling.refresh();
+            return Ok(());
+        }
+        if self.diagnostic.active && !request.action.starts_with("pad_") {
+            return Err("Use diagnostic controls or end the diagnostic session first".into());
         }
         if !self.device_support.supported || self.device.is_none() {
             return Err(self
@@ -428,7 +475,11 @@ pub fn run() {
                             }
                         }
                         app.update_polling_policy();
-                        json!({"id":r.id,"error":error,"state":app.native_snapshot()})
+                        let mut state = app.native_snapshot();
+                        if r.action.starts_with("diagnostic_") {
+                            state["diagnostic_report"] = names(&app.diagnostic);
+                        }
+                        json!({"id":r.id,"error":error,"state":state})
                     }
                     Err(e) => json!({"id":0,"error":e.to_string()}),
                 };

@@ -56,7 +56,7 @@ internal sealed class Controller : IDisposable
             var id=++sequence;
             await process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new {id,action,value}));
             await process.StandardInput.FlushAsync();
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(action=="diagnostic_test"?60:15));
             while (true) {
                 var line=await process.StandardOutput.ReadLineAsync(timeout.Token);
                 if (line is null) throw new IOException(L.T("Controller connection closed."));

@@ -12,3 +12,6 @@ pub mod profile;
 pub mod device_registry;
 pub mod diagnostics;
 mod packet;
+
+pub mod diagnostic;
+pub mod keyboard;

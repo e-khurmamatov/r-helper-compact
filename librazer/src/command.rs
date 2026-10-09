@@ -1,4 +1,4 @@
-use crate::device::Device;
+use crate::device::Transport;
 use crate::packet::Packet;
 use crate::types::{
     BatteryCare, Cluster, CpuBoost, FanMode, FanZone, GpuBoost, LightsAlwaysOn, LogoMode,
@@ -7,19 +7,19 @@ use crate::types::{
 
 use anyhow::{bail, ensure, Result};
 
-fn _send_command(device: &Device, command: u16, args: &[u8]) -> Result<Packet> {
+fn _send_command(device: &impl Transport, command: u16, args: &[u8]) -> Result<Packet> {
     let response = device.send(Packet::new(command, args))?;
     ensure!(response.get_args().starts_with(args));
     Ok(response)
 }
 
-fn _set_perf_mode(device: &Device, perf_mode: PerfMode, fan_mode: FanMode) -> Result<()> {
+fn _set_perf_mode(device: &impl Transport, perf_mode: PerfMode, fan_mode: FanMode) -> Result<()> {
     [1, 2].into_iter().try_for_each(|zone| {
         _send_command(device, 0x0d02, &[0x01, zone, perf_mode as u8, fan_mode as u8]).map(|_| ())
     })
 }
 
-fn _set_boost(device: &Device, cluster: Cluster, boost: u8) -> Result<()> {
+fn _set_boost(device: &impl Transport, cluster: Cluster, boost: u8) -> Result<()> {
     let args = &[0x01, cluster as u8, boost];
     ensure!(
         get_perf_mode(device)?.0 == PerfMode::Custom,
@@ -30,17 +30,17 @@ fn _set_boost(device: &Device, cluster: Cluster, boost: u8) -> Result<()> {
     Ok(())
 }
 
-fn _get_boost(device: &Device, cluster: Cluster) -> Result<u8> {
+fn _get_boost(device: &impl Transport, cluster: Cluster) -> Result<u8> {
     let response = device.send(Packet::new(0x0d87, &[0, cluster as u8, 0]))?;
     ensure!(response.get_args()[1] == cluster as u8);
     Ok(response.get_args()[2])
 }
 
-pub fn set_perf_mode(device: &Device, perf_mode: PerfMode) -> Result<()> {
+pub fn set_perf_mode(device: &impl Transport, perf_mode: PerfMode) -> Result<()> {
     _set_perf_mode(device, perf_mode, FanMode::Auto)
 }
 
-pub fn get_perf_mode(device: &Device) -> Result<(PerfMode, FanMode)> {
+pub fn get_perf_mode(device: &impl Transport) -> Result<(PerfMode, FanMode)> {
     let [r1, r2]: [Result<(PerfMode, FanMode)>; 2] = [1, 2].map(|zone| {
         let response = device.send(Packet::new(0x0d82, &[0, zone, 0, 0]))?;
         Ok((
@@ -64,23 +64,23 @@ pub fn get_perf_mode(device: &Device) -> Result<(PerfMode, FanMode)> {
     Ok(r1)
 }
 
-pub fn set_cpu_boost(device: &Device, boost: CpuBoost) -> Result<()> {
+pub fn set_cpu_boost(device: &impl Transport, boost: CpuBoost) -> Result<()> {
     _set_boost(device, Cluster::Cpu, boost as u8)
 }
 
-pub fn set_gpu_boost(device: &Device, boost: GpuBoost) -> Result<()> {
+pub fn set_gpu_boost(device: &impl Transport, boost: GpuBoost) -> Result<()> {
     _set_boost(device, Cluster::Gpu, boost as u8)
 }
 
-pub fn get_cpu_boost(device: &Device) -> Result<CpuBoost> {
+pub fn get_cpu_boost(device: &impl Transport) -> Result<CpuBoost> {
     CpuBoost::try_from(_get_boost(device, Cluster::Cpu)?)
 }
 
-pub fn get_gpu_boost(device: &Device) -> Result<GpuBoost> {
+pub fn get_gpu_boost(device: &impl Transport) -> Result<GpuBoost> {
     GpuBoost::try_from(_get_boost(device, Cluster::Gpu)?)
 }
 
-pub fn set_fan_rpm(device: &Device, rpm: u16, check_mode: bool) -> Result<()> {
+pub fn set_fan_rpm(device: &impl Transport, rpm: u16, check_mode: bool) -> Result<()> {
     ensure!((0..=5500).contains(&rpm));
     if check_mode {
         ensure!(
@@ -94,24 +94,24 @@ pub fn set_fan_rpm(device: &Device, rpm: u16, check_mode: bool) -> Result<()> {
     })
 }
 
-pub fn get_fan_rpm(device: &Device, fan_zone: FanZone) -> Result<u16> {
+pub fn get_fan_rpm(device: &impl Transport, fan_zone: FanZone) -> Result<u16> {
     let response = device.send(Packet::new(0x0d81, &[0, fan_zone as u8, 0]))?;
     ensure!(response.get_args()[1] == fan_zone as u8);
     Ok(response.get_args()[2] as u16 * 100)
 }
 
-pub fn get_fan_actual_rpm(device: &Device, fan_zone: FanZone) -> Result<u16> {
+pub fn get_fan_actual_rpm(device: &impl Transport, fan_zone: FanZone) -> Result<u16> {
     let response = device.send(Packet::new(0x0d88, &[0, fan_zone as u8, 0]))?;
     ensure!(response.get_args()[1] == fan_zone as u8);
     Ok(response.get_args()[2] as u16 * 100)
 }
 
-pub fn send_command(device: &Device, command: u16, args: &[u8]) -> Result<Packet> {
+pub fn send_command(device: &impl Transport, command: u16, args: &[u8]) -> Result<Packet> {
     let response = device.send(Packet::new(command, args))?;
     Ok(response)
 }
 
-pub fn set_max_fan_speed_mode(device: &Device, mode: MaxFanSpeedMode) -> Result<()> {
+pub fn set_max_fan_speed_mode(device: &impl Transport, mode: MaxFanSpeedMode) -> Result<()> {
     ensure!(
         get_perf_mode(device)?.0 == PerfMode::Custom,
         "Performance mode must be {:?}",
@@ -120,22 +120,22 @@ pub fn set_max_fan_speed_mode(device: &Device, mode: MaxFanSpeedMode) -> Result<
     _send_command(device, 0x070f, &[mode as u8]).map(|_| ())
 }
 
-pub fn get_max_fan_speed_mode(device: &Device) -> Result<MaxFanSpeedMode> {
+pub fn get_max_fan_speed_mode(device: &impl Transport) -> Result<MaxFanSpeedMode> {
     device.send(Packet::new(0x078f, &[0]))?.get_args()[0].try_into()
 }
 
-pub fn set_fan_mode(device: &Device, mode: FanMode) -> Result<()> {
+pub fn set_fan_mode(device: &impl Transport, mode: FanMode) -> Result<()> {
     _set_perf_mode(device, get_perf_mode(device)?.0, mode)
 }
 
-fn _set_logo_power(device: &Device, mode: LogoMode) -> Result<Packet> {
+fn _set_logo_power(device: &impl Transport, mode: LogoMode) -> Result<Packet> {
     match mode {
         LogoMode::Off => _send_command(device, 0x0300, &[1, 4, 0]),
         LogoMode::Static | LogoMode::Breathing => _send_command(device, 0x0300, &[1, 4, 1]),
     }
 }
 
-fn _set_logo_mode(device: &Device, mode: LogoMode) -> Result<Packet> {
+fn _set_logo_mode(device: &impl Transport, mode: LogoMode) -> Result<Packet> {
     match mode {
         LogoMode::Static => _send_command(device, 0x0302, &[1, 4, 0]),
         LogoMode::Breathing => _send_command(device, 0x0302, &[1, 4, 2]),
@@ -143,7 +143,7 @@ fn _set_logo_mode(device: &Device, mode: LogoMode) -> Result<Packet> {
     }
 }
 
-fn _get_logo_power(device: &Device) -> Result<bool> {
+fn _get_logo_power(device: &impl Transport) -> Result<bool> {
     match device.send(Packet::new(0x0380, &[1, 4, 0]))?.get_args()[2] {
         0 => Ok(false),
         1 => Ok(true),
@@ -151,7 +151,7 @@ fn _get_logo_power(device: &Device) -> Result<bool> {
     }
 }
 
-fn _get_logo_mode(device: &Device) -> Result<LogoMode> {
+fn _get_logo_mode(device: &impl Transport) -> Result<LogoMode> {
     match device.send(Packet::new(0x0382, &[1, 4, 0]))?.get_args()[2] {
         0 => Ok(LogoMode::Static),
         2 => Ok(LogoMode::Breathing),
@@ -159,7 +159,7 @@ fn _get_logo_mode(device: &Device) -> Result<LogoMode> {
     }
 }
 
-pub fn get_logo_mode(device: &Device) -> Result<LogoMode> {
+pub fn get_logo_mode(device: &impl Transport) -> Result<LogoMode> {
     let power = _get_logo_power(device)?;
     match power {
         true => _get_logo_mode(device),
@@ -167,7 +167,7 @@ pub fn get_logo_mode(device: &Device) -> Result<LogoMode> {
     }
 }
 
-pub fn set_logo_mode(device: &Device, mode: LogoMode) -> Result<()> {
+pub fn set_logo_mode(device: &impl Transport, mode: LogoMode) -> Result<()> {
     match mode {
         LogoMode::Off => {
             _set_logo_power(device, LogoMode::Off)?;
@@ -184,33 +184,33 @@ pub fn set_logo_mode(device: &Device, mode: LogoMode) -> Result<()> {
     Ok(())
 }
 
-pub fn get_keyboard_brightness(device: &Device) -> Result<u8> {
+pub fn get_keyboard_brightness(device: &impl Transport) -> Result<u8> {
     let response = device.send(Packet::new(0x0383, &[1, 5, 0]))?;
     ensure!(response.get_args()[1] == 5);
     Ok(response.get_args()[2])
 }
 
-pub fn set_keyboard_brightness(device: &Device, brightness: u8) -> Result<()> {
+pub fn set_keyboard_brightness(device: &impl Transport, brightness: u8) -> Result<()> {
     let args = &[1, 5, brightness];
     ensure!(device.send(Packet::new(0x0303, args))?.get_args().starts_with(args));
     Ok(())
 }
 
-pub fn get_lights_always_on(device: &Device) -> Result<LightsAlwaysOn> {
+pub fn get_lights_always_on(device: &impl Transport) -> Result<LightsAlwaysOn> {
     device.send(Packet::new(0x0084, &[0, 0]))?.get_args()[0].try_into()
 }
 
-pub fn set_lights_always_on(device: &Device, lights_always_on: LightsAlwaysOn) -> Result<()> {
+pub fn set_lights_always_on(device: &impl Transport, lights_always_on: LightsAlwaysOn) -> Result<()> {
     let args = &[lights_always_on as u8, 0];
     ensure!(device.send(Packet::new(0x0004, args))?.get_args().starts_with(args));
     Ok(())
 }
 
-pub fn get_battery_care(device: &Device) -> Result<BatteryCare> {
+pub fn get_battery_care(device: &impl Transport) -> Result<BatteryCare> {
     device.send(Packet::new(0x0792, &[0]))?.get_args()[0].try_into()
 }
 
-pub fn set_battery_care(device: &Device, mode: BatteryCare) -> Result<()> {
+pub fn set_battery_care(device: &impl Transport, mode: BatteryCare) -> Result<()> {
     let args = &[mode as u8];
     ensure!(device.send(Packet::new(0x0712, args))?.get_args().starts_with(args));
     Ok(())
