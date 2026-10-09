@@ -63,6 +63,14 @@ Available features depend on the model and firmware. Other Razer Blade models ma
 
 If your model is not supported or a feature does not work, you can help add support by sending a diagnostic report. Open **Diagnostics and support → Save diagnostic report…** in the status panel, then attach the saved file to a [GitHub issue](https://github.com/e-khurmamatov/r-helper-compact/issues/new/choose) and describe what does not work. Model and firmware details are filled in automatically when available.
 
+## Diagnostic mode
+
+Under **About device → Diagnostic mode**, start a temporary session to test individual functions with the implemented Legacy4, Modern6, StandardMatrix or ExtendedMatrix protocols, independently of the model profile. Choose a function, protocol and value, then use **Read value** or **Write and read back**. Legacy4 and Modern6 share wire commands and differ in their mode lists; matrix protocols test keyboard brightness and effects. No model initialization sequence or arbitrary raw command is sent. The Razer host, unique Blade controller, session-lock and external lighting ownership checks still apply.
+
+Laptop profile switching and software fan enforcement pause during the session; telemetry and Cooling Pad automation continue. Set Custom before CPU/GPU boost tests and Manual before RPM tests. Experimental writes are not saved into application profiles. Ending the session resumes normal automation but does not restore device settings, and a reboot is not a guaranteed reset.
+
+The separate session log records values before/after each experiment, write acknowledgement or failure, timestamped HID packets including rejected responses, and explicit unavailable readings. Effects have no implemented readback; describe the visible result under **Observed behavior**. A successful response does not confirm hardware compatibility. Up to 64 experiments are retained, with explicit truncation counters. Save the log before starting another session or quitting. **Save session log…** exports a reviewable text file; **Open GitHub issue** opens a new issue or the optional existing issue number. Attach the file manually. No report is uploaded automatically, and stderr, device paths, serial-number requests and personal settings are not collected by this recorder.
+
 ## Build
 
 Requires Windows x64, PowerShell 7, Python 3.11+, Visual Studio C++ Build Tools with the Windows SDK, Rust 1.98.1 (MSVC) and .NET SDK 10.0.401.

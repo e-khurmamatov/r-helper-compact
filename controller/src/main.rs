@@ -134,6 +134,7 @@ struct Controller {
     detecting_device: bool,
     device_detection_done: bool,
     device_support: librazer::device_registry::SupportReport,
+    diagnostic: librazer::diagnostic::Session,
 
     hid_enum_receiver: Option<mpsc::Receiver<HidEnumMessage>>,
     cooling_pad_usb_present: bool,
@@ -244,7 +245,8 @@ impl Controller {
             let user_auto = self.is_user_auto_mode();
             cap.limit_enabled = self.auto_fan_limit_enabled && user_auto;
             cap.max_rpm = self.auto_fan_max_rpm;
-            cap.skip = self.auto_fan_max_rpm_editing;
+            cap.skip = self.auto_fan_max_rpm_editing || self.diagnostic.active;
+            cap.diagnostic = self.diagnostic.active;
             if !cap.limit_enabled {
                 cap.cap_active = false;
             }
@@ -426,6 +428,7 @@ impl Controller {
             detecting_device: true,
             device_detection_done: false,
             device_support,
+            diagnostic: librazer::diagnostic::Session::default(),
 
             hid_enum_receiver: None,
             cooling_pad_usb_present: false,
@@ -670,7 +673,7 @@ impl Controller {
 
     /// Safety net when the cap enforcer released but hardware stayed Manual@max.
     fn reconcile_auto_fan_cap_state(&mut self) {
-        if !self.auto_fan_limit_enabled || self.auto_fan_max_rpm_editing {
+        if !self.auto_fan_limit_enabled || self.auto_fan_max_rpm_editing || self.diagnostic.active {
             return;
         }
 
@@ -723,7 +726,7 @@ impl Controller {
     /// Push saved laptop profile, fan cap, and cooling pad settings to hardware once
     /// both background init and device detection have finished (fixes autostart / boot gaps).
     fn apply_startup_controls(&mut self) {
-        if !self.fully_initialized || self.device.is_none() || self.startup_controls_applied {
+        if !self.fully_initialized || self.device.is_none() || self.startup_controls_applied || self.diagnostic.active {
             return;
         }
 
@@ -1226,7 +1229,7 @@ impl Controller {
     }
 
     fn auto_switch_profile(&mut self) {
-        if !self.auto_switch_enabled {
+        if !self.auto_switch_enabled || self.diagnostic.active {
             return;
         }
 
@@ -1654,6 +1657,7 @@ impl Controller {
 
     fn run_fan_enforcement(&mut self) {
         self.run_cooling_pad_fan_enforcement();
+        if self.diagnostic.active { return; }
 
         if self.fully_initialized && self.device.is_some() && !self.loading {
             self.sync_laptop_fan_cap();

@@ -18,6 +18,7 @@ pub struct LaptopFanCapShared {
     pub max_rpm: u16,
     /// Skip enforcement while the user is dragging the max-RPM slider.
     pub skip: bool,
+    pub diagnostic: bool,
     pub cap_active: bool,
 }
 

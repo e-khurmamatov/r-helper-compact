@@ -141,6 +141,6 @@ internal sealed class DeviceIssuePanel : StackPanel
         foreach(var part in parts)if(!System.Text.RegularExpressions.Regex.IsMatch(part,@"^[A-Za-z0-9_.-]+$")||part is "." or "..")return null;
         return "https://github.com/"+string.Join("/",parts);
     }
-    static string? ReadRepository() => ValidateRepository(System.Linq.Enumerable.FirstOrDefault(
+    internal static string? ReadRepository() => ValidateRepository(System.Linq.Enumerable.FirstOrDefault(
         Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyMetadataAttribute>(),x=>x.Key=="RepositoryUrl")?.Value);
 }

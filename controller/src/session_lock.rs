@@ -160,7 +160,9 @@ fn apply_lock_mitigations(
     cooling_pad_settings: &Arc<Mutex<CoolingPadEnforceShared>>,
     snapshots: &mut SessionSnapshots,
 ) {
-    if let Ok(mut cap) = laptop_fan_cap.lock() {
+    let Ok(mut cap) = laptop_fan_cap.lock() else { return; };
+    // The cap mutex also serializes session transitions with automatic laptop writes.
+    if !snapshots.pause_laptop(cap.diagnostic) {
         if cap.cap_active {
             snapshots.laptop_cap = Some(LaptopCapSnapshot {
                 cap_active: cap.cap_active,
@@ -175,22 +177,23 @@ fn apply_lock_mitigations(
                 }
             }
         }
-    }
 
-    if snapshots.laptop_cap.is_none() {
-        if let Some((fan_mode, rpm)) = device.with(read_laptop_fan_mode).flatten() {
-            if fan_mode == FanMode::Manual {
-                if let Some(rpm) = rpm {
-                    snapshots.laptop_manual_rpm = Some(rpm);
-                }
-                if let Some(result) = device.with_mut(|d| command::set_fan_mode(d, FanMode::Auto)) {
-                    if let Err(e) = result {
-                        eprintln!("session lock: failed to set laptop fan Auto: {e}");
+        if snapshots.laptop_cap.is_none() {
+            if let Some((fan_mode, rpm)) = device.with(read_laptop_fan_mode).flatten() {
+                if fan_mode == FanMode::Manual {
+                    if let Some(rpm) = rpm {
+                        snapshots.laptop_manual_rpm = Some(rpm);
+                    }
+                    if let Some(result) = device.with_mut(|d| command::set_fan_mode(d, FanMode::Auto)) {
+                        if let Err(e) = result {
+                            eprintln!("session lock: failed to set laptop fan Auto: {e}");
+                        }
                     }
                 }
             }
         }
     }
+    drop(cap);
 
     if let Ok(mut settings) = cooling_pad_settings.lock() {
         if settings.active
@@ -218,6 +221,9 @@ fn restore_unlock_state(
         pending_cooling_pad_restore.store(true, Ordering::Relaxed);
     }
 
+    let Ok(mut cap) = laptop_fan_cap.lock() else { return; };
+    if snapshots.pause_laptop(cap.diagnostic) { return; }
+
     if let Some(rpm) = snapshots.laptop_manual_rpm.take() {
         if let Some(result) = device.with_mut(|d| {
             command::set_fan_mode(d, FanMode::Manual)?;
@@ -230,11 +236,37 @@ fn restore_unlock_state(
     }
 
     if let Some(cap_snap) = snapshots.laptop_cap.take() {
-        if let Ok(mut cap) = laptop_fan_cap.lock() {
-            cap.skip = false;
-            cap.limit_enabled = cap_snap.limit_enabled;
-            cap.max_rpm = cap_snap.max_rpm;
-            cap.cap_active = cap_snap.cap_active;
+        cap.skip = false;
+        cap.limit_enabled = cap_snap.limit_enabled;
+        cap.max_rpm = cap_snap.max_rpm;
+        cap.cap_active = cap_snap.cap_active;
+    }
+}
+
+impl SessionSnapshots {
+    fn pause_laptop(&mut self, diagnostic: bool) -> bool {
+        if diagnostic {
+            self.laptop_manual_rpm = None;
+            self.laptop_cap = None;
         }
+        diagnostic
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn diagnostic_blocks_lock_and_unlock_writes_and_discards_old_laptop_restore() {
+        let mut snapshots = SessionSnapshots {
+            laptop_manual_rpm: Some(4000),
+            laptop_cap: Some(LaptopCapSnapshot::default()),
+            cooling_pad_manual_rpm: Some(2000),
+        };
+        assert!(snapshots.pause_laptop(true));
+        assert!(snapshots.laptop_manual_rpm.is_none());
+        assert!(snapshots.laptop_cap.is_none());
+        assert_eq!(snapshots.cooling_pad_manual_rpm, Some(2000));
+        assert!(!snapshots.pause_laptop(false));
     }
 }

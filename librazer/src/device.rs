@@ -6,7 +6,20 @@ use crate::device_registry::{self, SupportReport};
 use anyhow::{anyhow, Context, Result};
 use std::{thread, time::Duration};
 
+/// Typed commands share this transport with synthetic diagnostic tests.
+pub trait Transport {
+    fn send(&self, report: Packet) -> Result<Packet>;
+}
+
+impl Transport for Device {
+    fn send(&self, report: Packet) -> Result<Packet> { Device::send(self, report) }
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct ControlInterface { pub number: i32, pub usage_page: u16, pub usage: u16 }
+
 pub struct Device {
+    interface: ControlInterface,
     device: hidapi::HidDevice,
     pub info: Descriptor,
 }
@@ -33,11 +46,13 @@ fn read_device_model() -> Result<String> {
 impl Device {
     pub const RAZER_VID: u16 = crate::enumerate::RAZER_VID;
 
+    pub fn control_interface(&self) -> &ControlInterface { &self.interface }
+
     pub fn info(&self) -> &Descriptor {
         &self.info
     }
 
-    fn open_hid(pid: u16) -> Result<hidapi::HidDevice> {
+    fn open_hid(pid: u16) -> Result<(hidapi::HidDevice, ControlInterface)> {
         let api = hidapi::HidApi::new().context("Failed to create hid api")?;
 
         for info in api
@@ -46,16 +61,17 @@ impl Device {
         {
             let device = api.open_path(info.path())?;
             if device.send_feature_report(&[0, 0]).is_ok() {
-                return Ok(device);
+                return Ok((device, ControlInterface { number:info.interface_number(), usage_page:info.usage_page(), usage:info.usage() }));
             }
         }
         anyhow::bail!("Failed to open Razer device with PID {:04x}", pid)
     }
 
     fn open_by_pid(pid: u16) -> Result<Device> {
-        let hid = Self::open_hid(pid)?;
+        let (hid, interface) = Self::open_hid(pid)?;
         Ok(Device {
             device: hid,
+            interface,
             info: Descriptor {
                 model_sku: String::new(),
                 display_name: String::new(),
@@ -77,6 +93,7 @@ impl Device {
         for attempt in 0..MAX_RETRIES {
             thread::sleep(Duration::from_micros(1000));
 
+            crate::diagnostic::trace_request(&report);
             self.device
                 .send_feature_report(
                     [0_u8; 1]
@@ -86,11 +103,15 @@ impl Device {
                         .collect::<Vec<_>>()
                         .as_slice(),
                 )
+                .map_err(|error| { crate::diagnostic::trace("send_error", &[], None); error })
                 .context("Failed to send feature report")?;
 
             thread::sleep(Duration::from_micros(2000));
 
-            let response_size = self.device.get_feature_report(&mut response_buf)?;
+            let response_size = self.device.get_feature_report(&mut response_buf).map_err(|error| {
+                crate::diagnostic::trace("read_error", &[], None); error
+            })?;
+            crate::diagnostic::trace("response", &response_buf[1..response_size.min(response_buf.len()).max(1)], response_buf.get(1).copied().filter(|_| response_size > 1));
             if response_buf.len() != response_size {
                 return Err(anyhow!("Response size != {}", response_buf.len()));
             }
@@ -99,7 +120,10 @@ impl Device {
 
             if response.ensure_matches_report(&report).is_ok() {
                 return Ok(response);
-            } else if attempt == MAX_RETRIES - 1 {
+            } else {
+                crate::diagnostic::trace("rejected_response", &[], Some(response_buf[1]));
+            }
+            if attempt == MAX_RETRIES - 1 {
                 return Err(anyhow!("Failed to match report after {} attempts", MAX_RETRIES));
             }
 
@@ -164,6 +188,14 @@ impl Device {
         };
         let machine=crate::diagnostics::read(&sku,identity=="razer");
         SupportReport { machine,supported,experimental,identity,model,sku,hid,reason }
+    }
+
+    /// Recheck the host and controller before every manual diagnostic operation.
+    pub fn validate_current_identity(&self) -> Result<()> {
+        let (target, sku) = Self::control_identity()?;
+        anyhow::ensure!(target.pid == self.info.pid && sku == self.info.model_sku,
+            "Laptop identity changed. Reconnect before diagnostic control.");
+        Ok(())
     }
 
     pub fn detect() -> Result<Device> {
