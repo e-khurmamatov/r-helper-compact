@@ -246,6 +246,7 @@ impl Controller {
             cap.limit_enabled = self.auto_fan_limit_enabled && user_auto;
             cap.max_rpm = self.auto_fan_max_rpm;
             cap.skip = self.auto_fan_max_rpm_editing || self.diagnostic.active;
+            cap.diagnostic = self.diagnostic.active;
             if !cap.limit_enabled {
                 cap.cap_active = false;
             }

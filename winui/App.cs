@@ -35,7 +35,7 @@ public sealed partial class CompactApp : Application
 {
     readonly bool smoke;
     MainWindow? window;
-    public CompactApp(bool smoke) { this.smoke=smoke; UnhandledException += (_,e) => { if(smoke) File.WriteAllText(Path.Combine(AppContext.BaseDirectory,"smoke-error.txt"),e.Exception.ToString()); }; InitializeComponent(); }
+    public CompactApp(bool smoke) { this.smoke=smoke; UnhandledException += (_,e) => { if(smoke) { Environment.ExitCode=1;File.WriteAllText(Path.Combine(AppContext.BaseDirectory,"smoke-error.txt"),e.Exception.ToString()); } }; InitializeComponent(); }
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         window=new MainWindow(smoke);

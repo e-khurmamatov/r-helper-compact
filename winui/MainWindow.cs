@@ -24,6 +24,7 @@ internal sealed class MainWindow : Window
     readonly ContentControl applicationHost=new() { HorizontalContentAlignment=HorizontalAlignment.Stretch };
     readonly UpdatePanel updates;
     readonly DiagnosticPanel diagnosticPanel;
+    readonly Expander aboutSection=new() { Header=L.T("About device"),HorizontalAlignment=HorizontalAlignment.Stretch };
     bool Supported=>S("support_status") is "supported" or "experimental";
     readonly ScrollViewer scroll=new() { HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=ScrollBarVisibility.Auto };
     readonly Forms.NativeWindow trayOwner=new();
@@ -225,7 +226,8 @@ internal sealed class MainWindow : Window
             catch(Exception e) when(e is IOException or UnauthorizedAccessException) { language.SelectedIndex=savedLanguage;ShowError(e.Message); }
         };
         applicationHost.Content=Card(L.T("Application"),updates,Fold(L.T("Preferences"),startup,theme,language,languageHint));organizer.Add("app",L.T("Application"),applicationHost);
-        organizer.Add("about",L.T("About device"),new Expander { Header=L.T("About device"),Content=Stack(info,diagnosticPanel),HorizontalAlignment=HorizontalAlignment.Stretch });
+        aboutSection.Content=Stack(info,diagnosticPanel);
+        organizer.Add("about",L.T("About device"),aboutSection);
         organizer.Initialize(new[]{"performance","cooling","battery","profiles","lighting","pad","app","about"});
         content.Children.Add(status);
         content.Children.Add(ActionButton(L.T("Quit application"),()=> { Quit(); return Task.CompletedTask; }));
@@ -282,7 +284,6 @@ internal sealed class MainWindow : Window
     }
     void CheckSmokeState() {
         DeviceIssuePanel.SmokeTest();
-        DiagnosticPanel.SmokeTest();
         // Synthetic values only in the explicit controller-free smoke test.
         using var sample=JsonDocument.Parse("""{"support_status":"supported","logo":"Off","model":"UI test · synthetic data","cpu_temp":59.050018310546875,"gpu_temp":49.0,"actual_rpm":3200,"fan_rpm":4000,"fan_auto":false,"mode":"Balanced","modes":["Balanced"],"brightness":89,"ready":false,"pad_connected":false}""");
         state=sample.RootElement.Clone();Apply();
@@ -552,6 +553,7 @@ internal sealed class MainWindow : Window
     async Task CaptureSmoke()
     {
         try {
+            await DiagnosticPanel.SmokeTest();
             await SliderCommandSmoke.Run();
             TemperatureChart.SmokeTest();
             await UpdateSmoke.Run();
@@ -617,6 +619,19 @@ internal sealed class MainWindow : Window
                 state=unknown.RootElement.Clone();Apply();scroll.ChangeView(null,0,null,true);
                 await Task.Delay(250);CaptureFrame("winui-smoke-unsupported.png");
             }
+            using(var diagnosticSample=JsonDocument.Parse("""{"support_status":"supported","ready":true,"model":"UI test · synthetic data","diagnostic_available":true,"diagnostic":{"active":true},"diagnostic_report":{"started_ms":2,"active":true,"dropped_records":0,"records":[{"sequence":1,"experiment":{"protocol":"Legacy4","operation":{"kind":"brightness","value":99}},"before":{"value":null,"error":"device_read_failed"},"write_result":"failed","write_error":"device_write_failed","after":{"value":99,"error":null},"dropped_exchanges":0,"exchanges":[]}]}}""")) {
+                state=diagnosticSample.RootElement.Clone();Apply();aboutSection.IsExpanded=true;
+                await Task.Delay(350);content.UpdateLayout();
+                if(hardwareHost.IsEnabled||lightingHost.IsEnabled||lightingOwner.IsEnabled||startup.IsEnabled||reconnect.IsEnabled)throw new InvalidOperationException("Diagnostic session left normal laptop writes enabled");
+                foreach(bool effect in new[]{false,true}) {
+                    diagnosticPanel.PreviewSmoke(effect);content.UpdateLayout();
+                    diagnosticPanel.StartBringIntoView(new BringIntoViewOptions {AnimationDesired=false,VerticalAlignmentRatio=0});
+                    await Task.Delay(250);CaptureFrame(effect?"winui-diagnostic-effects.png":"winui-diagnostic-controls.png");
+                }
+                scroll.ChangeView(null,scroll.ScrollableHeight,null,true);await Task.Delay(250);CaptureFrame("winui-diagnostic-results.png");
+                aboutSection.IsExpanded=false;
+                File.AppendAllText(Path.Combine(AppContext.BaseDirectory,"smoke-checks.txt"),"\nPASS: active diagnostics disable normal laptop write controls and startup/reconnect; diagnostic controls/effects/results screenshots captured. Automatic hardware-write suppression is checked separately by Rust tests and source review.");
+            }
             foreach(var scenario in new[]{"verified","known-experimental","unknown-razer","non-razer","razer-no-hid"}) {
                 bool enabled=scenario is "verified" or "known-experimental" or "unknown-razer";
                 bool experimental=scenario is "known-experimental" or "unknown-razer";
@@ -659,7 +674,7 @@ internal sealed class MainWindow : Window
             var encoder=await Windows.Graphics.Imaging.BitmapEncoder.CreateAsync(Windows.Graphics.Imaging.BitmapEncoder.PngEncoderId,stream);
             encoder.SetPixelData(Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8,Windows.Graphics.Imaging.BitmapAlphaMode.Premultiplied,(uint)bitmap.PixelWidth,(uint)bitmap.PixelHeight,96,96,pixels.ToArray());
             await encoder.FlushAsync();
-        } catch(Exception e) { File.WriteAllText(Path.Combine(AppContext.BaseDirectory,"smoke-error.txt"),e.ToString()); }
+        } catch(Exception e) { Environment.ExitCode=1;File.WriteAllText(Path.Combine(AppContext.BaseDirectory,"smoke-error.txt"),e.ToString()); }
     }
     void CaptureFrame(string name) {
         if(!GetWindowRect(hwnd,out var rect))throw new InvalidOperationException("Window rectangle unavailable");

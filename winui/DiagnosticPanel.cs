@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -202,22 +203,74 @@ internal sealed class DiagnosticPanel : StackPanel
         b.Append(JsonSerializer.Serialize(report,new JsonSerializerOptions {WriteIndented=true}));
         return b.ToString();
     }
-    internal static void SmokeTest() {
-        var panel=new DiagnosticPanel((_,_)=>Task.CompletedTask);
+    internal void PreviewSmoke(bool effect) {
+        function.SelectedIndex=effect?10:2;protocol.SelectedIndex=effect?2:0;
+        if(effect)option.SelectedIndex=4;else number.Value=4300;
+        observation.Text="Synthetic observation: verify the physical behavior before sharing.";
+    }
+    internal static async Task SmokeTest() {
+        DiagnosticPanel panel=null!;
+        int sends=0;
+        TaskCompletionSource? pending=new();
+        panel=new DiagnosticPanel(async(action,value)=> {
+            if(action!="diagnostic_mode")throw new InvalidOperationException("Unexpected synthetic command");
+            sends++;
+            if(pending is not null)await pending.Task;
+            using var reply=JsonDocument.Parse(JsonSerializer.Serialize(new {diagnostic_available=true,diagnostic=new {active=(bool)value!}}));
+            panel.Update(reply.RootElement);
+        });
+        using var ready=JsonDocument.Parse("""{"diagnostic_available":true,"diagnostic":{"active":false}}""");
+        panel.Update(ready.RootElement);
+        if(!panel.mode.IsEnabled||panel.controlHost.IsEnabled||panel.save.IsEnabled)throw new InvalidOperationException("Diagnostic inactive availability failed");
+        var starting=panel.Run("diagnostic_mode",true);
+        if(panel.mode.IsEnabled||panel.controlHost.IsEnabled||panel.write.IsEnabled)throw new InvalidOperationException("Diagnostic command availability failed");
+        pending.SetResult();pending=null;await starting;
+        if(!panel.Active||!panel.mode.IsOn||!panel.controlHost.IsEnabled||!panel.write.IsEnabled)throw new InvalidOperationException("Diagnostic start failed");
         using var on=JsonDocument.Parse("""{"diagnostic_available":true,"diagnostic":{"active":true},"diagnostic_report":{"started_ms":1,"active":true,"records":[]}}""");
-        panel.Update(on.RootElement);panel.function.SelectedIndex=2;panel.number.Value=4300;panel.observation.Text="User observation";panel.Update(on.RootElement);
-        using var request=JsonDocument.Parse(JsonSerializer.Serialize(panel.Experiment(true)));
-        if(!panel.Active||panel.number.Value!=4300||panel.observation.Text!="User observation"||request.RootElement.GetProperty("operation").GetProperty("value").GetInt32()!=4300)
-            throw new InvalidOperationException("Diagnostic polling overwrote an experiment or observation");
+        panel.Update(on.RootElement);
+        panel.color.Color=Windows.UI.Color.FromArgb(255,18,52,86);
+        panel.color2.Color=Windows.UI.Color.FromArgb(255,171,205,239);
+        panel.direction.SelectedIndex=0;panel.duration.SelectedIndex=3;
+        for(int f=0;f<panel.function.Items.Count;f++) {
+            panel.function.SelectedIndex=f;
+            for(int p=0;p<panel.protocol.Items.Count;p++) {
+                if(!((ComboBoxItem)panel.protocol.Items[p]).IsEnabled)continue;
+                panel.protocol.SelectedIndex=p;
+                if(panel.option.Items.Count==0) {
+                    using var numeric=JsonDocument.Parse(JsonSerializer.Serialize(panel.Experiment(true)));
+                    if(numeric.RootElement.GetProperty("operation").GetProperty("value").ValueKind!=JsonValueKind.Number)throw new InvalidOperationException("Diagnostic numeric value failed");
+                }
+                for(int v=0;v<panel.option.Items.Count;v++) {
+                    panel.option.SelectedIndex=v;
+                    string expected=JsonSerializer.Serialize(panel.Experiment(true));
+                    panel.observation.Text="User observation";panel.Update(on.RootElement);
+                    if(expected!=JsonSerializer.Serialize(panel.Experiment(true))||panel.observation.Text!="User observation")throw new InvalidOperationException("Diagnostic refresh overwrote selections");
+                    if(Choice(panel.function)=="effect"&&panel.read.IsEnabled)throw new InvalidOperationException("Effect readback enabled");
+                }
+            }
+        }
+        panel.function.SelectedIndex=2;panel.number.Value=4300;panel.Update(on.RootElement);
+        if(panel.number.Value!=4300)throw new InvalidOperationException("Diagnostic polling overwrote RPM");
         panel.number.Value=4350;
         try {panel.Experiment(true);throw new InvalidOperationException("Invalid diagnostic RPM accepted");}catch(InvalidOperationException e) when(e.Message==L.T("Enter an integer within the displayed range. RPM uses steps of 100.")) { }
+        using var reading=JsonDocument.Parse("""{"started_ms":1,"active":true,"dropped_records":0,"records":[{"sequence":1,"experiment":{"protocol":"Legacy4"},"before":{"value":null,"error":"device_read_failed"},"write_result":"failed","write_error":"device_write_failed","after":{"value":99,"error":null},"dropped_exchanges":0,"exchanges":[{"elapsed_ms":1,"phase":"write","event":"read_error","status":null,"hex":""}]}]}""");
+        using var recorded=JsonDocument.Parse(JsonSerializer.Serialize(new {diagnostic_available=true,diagnostic=new {active=true},diagnostic_report=reading.RootElement}));
+        panel.Update(recorded.RootElement);
+        if(!panel.result.Text.Contains(L.T("Unavailable"))||!panel.result.Text.Contains("device_read_failed")||!panel.result.Text.Contains("99")||!panel.result.Text.Contains("device_write_failed"))throw new InvalidOperationException("Diagnostic partial writes or unavailable reads lost");
+        using var blocked=JsonDocument.Parse(reading.RootElement.GetRawText().Replace("device_write_failed","windows_session_locked").Replace("\"failed\"","\"blocked\""));
+        if(!FormatLatest(blocked.RootElement).Contains("windows_session_locked")||!FormatLatest(blocked.RootElement).Contains("blocked"))throw new InvalidOperationException("Blocked diagnostic result lost");
+        string saved=panel.ReportText;
         using var disconnected=JsonDocument.Parse("""{"diagnostic":{"active":true},"diagnostic_available":false}""");panel.Update(disconnected.RootElement);
-        if(!panel.mode.IsEnabled)throw new InvalidOperationException("Cannot end diagnostic session after disconnect");
-        using var reading=JsonDocument.Parse("""{"dropped_records":0,"records":[{"sequence":1,"experiment":{"protocol":"Legacy4"},"before":{"value":null,"error":"device_read_failed"},"write_result":"failed","write_error":"device_write_failed","after":{"value":99,"error":null},"dropped_exchanges":0,"exchanges":[{"elapsed_ms":1,"phase":"write","event":"read_error","status":null,"hex":""}]}]}""");
-        string formatted=FormatLatest(reading.RootElement);
-        if(!formatted.Contains("device_read_failed")||!formatted.Contains("99")||!formatted.Contains("device_write_failed"))throw new InvalidOperationException("Diagnostic results lost failed reads or partial writes");
-        using var off=JsonDocument.Parse("""{"diagnostic":{"active":false},"diagnostic_report":{"started_ms":1,"active":false,"records":[]}}""");panel.Update(off.RootElement);
-        if(panel.controlHost.IsEnabled||!panel.save.IsEnabled||!panel.ReportText.Contains("User observation")||IssueUrl("https://github.com/a/b",21)!="https://github.com/a/b/issues/21"||IssueUrl("https://github.com/a/b",double.NaN).Contains("NaN"))
-            throw new InvalidOperationException("Diagnostic export or issue flow failed");
+        if(!panel.mode.IsEnabled||panel.ReportText!=saved)throw new InvalidOperationException("Cannot end or export after device disconnect");
+        await panel.Run("diagnostic_mode",false);
+        if(panel.Active||panel.mode.IsOn||panel.controlHost.IsEnabled||!panel.save.IsEnabled||sends!=2)throw new InvalidOperationException("Diagnostic end after disconnect failed");
+        panel.Update(default);
+        if(panel.ReportText!=saved||!panel.save.IsEnabled||!panel.copy.IsEnabled||!panel.open.IsEnabled)throw new InvalidOperationException("Controller loss discarded last report");
+        string path=Path.Combine(AppContext.BaseDirectory,"synthetic-diagnostic-session.txt");
+        File.WriteAllText(path,panel.ReportText);
+        if(File.ReadAllText(path)!=saved)throw new InvalidOperationException("Session export round trip failed");
+        const string repo="https://github.com/e-khurmamatov/r-helper-compact";
+        if(IssueUrl(repo,21)!=repo+"/issues/21"||IssueUrl(repo,double.NaN)!=repo+"/issues/new?template=device_support.md")throw new InvalidOperationException("Diagnostic issue URL or privacy failed");
+        File.AppendAllText(Path.Combine(AppContext.BaseDirectory,"smoke-checks.txt"),"\nPASS: diagnostic start/end, all functions/protocols/values/effects, refresh preservation, unavailable/blocked/partial results, retained log after device/controller loss, export round trip, new issue and issue #21 URLs without diagnostic data. Synthetic transport only; file picker and browser not launched.");
     }
 }
